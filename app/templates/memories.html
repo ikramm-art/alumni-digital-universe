@@ -1,0 +1,4 @@
+{% extends "base.html" %}
+{% block content %}<section class="section"><p class="eyebrow">MEMORY ARCHIVE</p><h1>Memory Wall</h1>
+<form class="search"><input name="q" value="{{ q }}" placeholder="Search memories..."><button class="button">Search</button></form>
+<div class="grid">{% for m in memories %}<article class="card"><div class="cardbody"><small>{{ m.year or "—" }} · {{ m.location or "Unknown place" }} · {{ m.category }}</small><h3>{{ m.title }}</h3><p>{{ m.description }}</p></div></article>{% else %}<div class="empty">No signal found.</div>{% endfor %}</div></section>{% endblock %}

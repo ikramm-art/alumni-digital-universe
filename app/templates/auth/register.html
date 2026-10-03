@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Register · AlumniVerse{% endblock %}
+{% block content %}
+<section class="auth account-auth">
+    <div class="panel">
+        <p class="eyebrow">JOIN THE GENERATION</p>
+        <h1>Create your space.</h1>
+        <p>Buat akun alumni dan mulai isi perjalananmu.</p>
+        <form method="post" class="auth-form">
+            <label for="register-name">Nama lengkap</label>
+            <input id="register-name" name="full_name" autocomplete="name" maxlength="120" required>
+            <label for="register-email">Email</label>
+            <input id="register-email" name="email" type="email" autocomplete="email" maxlength="160" required>
+            <label for="register-password">Password</label>
+            <input id="register-password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+            <label for="register-confirm-password">Confirm password</label>
+            <input id="register-confirm-password" name="confirm_password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+            <div class="account-basics">
+                <label for="register-class">Class <span>(optional)</span></label>
+                <input id="register-class" name="class_name" maxlength="80">
+                <label for="register-generation">Generation <span>(optional)</span></label>
+                <input id="register-generation" name="generation" maxlength="80">
+                <label for="register-grad-year">Graduation year <span>(optional)</span></label>
+                <input id="register-grad-year" name="graduation_year" type="number" min="1900" max="2100" inputmode="numeric">
+            </div>
+            <button class="button" type="submit">Create Account</button>
+        </form>
+        <p>Sudah punya akun? <a href="{{ url_for('auth.login') }}">Login</a></p>
+    </div>
+</section>
+{% endblock %}

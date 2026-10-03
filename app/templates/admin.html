@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Alumni Command Center · AlumniVerse{% endblock %}
+{% block content %}
+<section class="command-center-page admin-foundation">
+    <header class="command-center-heading">
+        <p class="eyebrow">ALUMNI DIGITAL UNIVERSE · ADMINISTRATION</p>
+        <h1>Alumni Command Center</h1>
+        <p>Review community memories and manage the station from one protected space.</p>
+        <a class="button" href="#memory-review">Review pending memories <span class="command-count">{{ pending_count }}</span></a>
+    </header>
+
+    <section class="command-stats" aria-label="Universe overview">
+        <article class="command-stat"><span>ALUMNI ACCOUNTS</span><strong>{{ alumni_count }}</strong><small>registered alumni</small></article>
+        <article class="command-stat"><span>MEMORY REVIEW</span><strong>{{ pending_count }}</strong><small>awaiting a decision</small></article>
+        <article class="command-stat"><span>PUBLIC ARCHIVE</span><strong>{{ approved_memory_count }}</strong><small>approved memories</small></article>
+    </section>
+
+    <section class="command-shortcuts" aria-label="Management areas">
+        <a class="command-shortcut command-shortcut-active" href="#memory-review">
+            <span>01 · CONTRIBUTIONS</span><h2>Memory review</h2>
+            <p>Approve or reject alumni submissions before publication.</p>
+            <strong>{{ pending_count }} waiting <span aria-hidden="true">→</span></strong>
+        </a>
+        <article class="command-shortcut command-shortcut-placeholder" aria-disabled="true">
+            <span>02 · CREW REGISTRY</span><h2>Alumni management</h2>
+            <p>Account management tools are reserved for a later phase.</p>
+            <strong>Foundation placeholder</strong>
+        </article>
+        <article class="command-shortcut command-shortcut-placeholder" aria-disabled="true">
+            <span>03 · UNIVERSE SYSTEMS</span><h2>Universe management</h2>
+            <p>Website configuration tools are reserved for a later phase.</p>
+            <strong>Foundation placeholder</strong>
+        </article>
+    </section>
+
+    <section class="memory-review-section" id="memory-review" aria-labelledby="memory-review-title">
+        <div class="memory-review-heading">
+            <p class="eyebrow">CONTRIBUTIONS</p>
+            <h2 id="memory-review-title">Pending memory review</h2>
+            <p>Approved memories become part of the public archive.</p>
+        </div>
+        <div class="memory-review-list">
+            {% for memory in pending_memories %}
+            <article class="panel memory-review-card">
+                {% if memory.image %}<img class="memory-review-image" src="{{ url_for('main.uploaded_file', filename=memory.image) }}" alt="Photo attached to {{ memory.title }}" loading="lazy">{% endif %}
+                <div class="memory-review-copy">
+                    <p class="eyebrow">PENDING REVIEW · {{ memory.category }}</p>
+                    <h3>{{ memory.title }}</h3>
+                    <p class="memory-review-meta">By {{ memory.uploader.full_name if memory.uploader else "Unknown alumnus" }}{% if memory.year %} · {{ memory.year }}{% endif %}{% if memory.location %} · {{ memory.location }}{% endif %}</p>
+                    {% if memory.description %}<p>{{ memory.description }}</p>{% endif %}
+                    <div class="memory-review-actions">
+                        <form method="post" action="{{ url_for('main.review_memory', memory_id=memory.id) }}"><button class="button" type="submit" name="action" value="approve">Approve</button></form>
+                        <form method="post" action="{{ url_for('main.review_memory', memory_id=memory.id) }}"><button class="button ghost" type="submit" name="action" value="reject">Reject</button></form>
+                    </div>
+                </div>
+            </article>
+            {% else %}
+            <div class="panel memory-review-empty"><p class="eyebrow">ARCHIVE IN GOOD ORDER</p><h3>No memories are waiting for review.</h3><p>New alumni submissions will appear here.</p></div>
+            {% endfor %}
+        </div>
+    </section>
+</section>
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Home — Alumni Digital Universe{% endblock %}
+
+{% block content %}
+<section class="hero home-hero">
+    <div class="hero-orbit orbit-one" aria-hidden="true"></div>
+    <div class="hero-orbit orbit-two" aria-hidden="true"></div>
+    <div class="hero-content reveal">
+        <p class="eyebrow">✦ Alumni Digital Universe</p>
+        <h1>Where Memories<br><span>Become a Universe.</span></h1>
+        <p class="lead">One generation. Countless memories. A digital space for everyone who shared the same journey.</p>
+        <div class="actions">
+            <a class="button" href="{{ url_for('main.memories') }}">Explore Memories <span aria-hidden="true">→</span></a>
+            <a class="button ghost" href="{{ url_for('main.galaxy') }}">Enter Galaxy <span aria-hidden="true">✦</span></a>
+        </div>
+    </div>
+    <a class="hero-scroll-indicator" href="#universe-intro"><span></span><small>Scroll to explore</small></a>
+</section>
+
+<section class="section intro-section reveal" id="universe-intro">
+    <div class="section-heading">
+        <p class="eyebrow">Our Universe</p>
+        <h2>Every person is a star.</h2>
+        <p class="section-description">Every memory is a fragment of our journey. Together, they form something bigger than a collection of photos.</p>
+    </div>
+</section>
+
+<section class="section memories-preview">
+    <div class="section-header reveal">
+        <div><p class="eyebrow">Memory Fragments</p><h2>Featured Memories</h2></div>
+        <a class="section-link" href="{{ url_for('main.memories') }}">View all memories <span aria-hidden="true">→</span></a>
+    </div>
+    <div class="memory-grid">
+        {% for m in memories %}
+        <article class="memory-card reveal">
+            <div class="memory-image">
+                {% if m.image %}
+                <img src="{{ url_for('main.uploaded_file', filename=m.image) }}" alt="{{ m.title }}" loading="lazy">
+                {% else %}
+                <div class="memory-placeholder" aria-hidden="true">✦</div>
+                {% endif %}
+                <div class="memory-overlay"></div>
+                <span class="memory-category">{{ m.category or "Memory" }}</span>
+            </div>
+            <div class="memory-content">
+                <div class="memory-meta">{{ m.year or "—" }}{% if m.location %}<span aria-hidden="true"> · </span>{{ m.location }}{% endif %}</div>
+                <h3>{{ m.title }}</h3>
+                <p>{{ m.description or "A fragment from our journey." }}</p>
+            </div>
+        </article>
+        {% else %}
+        <div class="empty reveal memory-empty">
+            <span aria-hidden="true">✦</span>
+            <h3>The galaxy is still growing.</h3>
+            <p>Be the first to add a memory to our universe.</p>
+            {% if current_user.is_authenticated %}
+            <a class="button" href="{{ url_for('main.profile') }}">Add a Memory <span aria-hidden="true">→</span></a>
+            {% else %}
+            <a class="button" href="{{ url_for('auth.login') }}">Join the Universe <span aria-hidden="true">→</span></a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="section constellation-preview">
+    <div class="section-header reveal">
+        <div><p class="eyebrow">The People</p><h2>Our Constellation</h2></div>
+        <a class="section-link" href="{{ url_for('main.alumni') }}">Meet everyone <span aria-hidden="true">→</span></a>
+    </div>
+    <div class="people">
+        {% for a in alumni %}
+        <a class="person alumni-card reveal" href="{{ url_for('main.profile_public', user_id=a.id) }}">
+            <div class="person-glow" aria-hidden="true"></div>
+            <div class="avatar">
+                {% if a.profile_photo %}
+                <img src="{{ url_for('main.uploaded_file', filename=a.profile_photo) }}" alt="{{ a.full_name }}" loading="lazy">
+                {% else %}{{ a.full_name[:1]|upper }}{% endif %}
+            </div>
+            <div class="person-info"><strong>{{ a.full_name }}</strong><small>{{ a.graduation_year or "Alumni" }}</small>
+                {% if a.university %}<span class="person-detail">{{ a.university }}</span>{% endif %}
+            </div>
+            <span class="person-arrow" aria-hidden="true">↗</span>
+        </a>
+        {% else %}
+        <div class="empty reveal"><span aria-hidden="true">✦</span><h3>Our constellation is waiting.</h3><p>More alumni will appear here as they join.</p></div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="section journey-section reveal">
+    <div class="journey-card">
+        <div class="journey-content">
+            <p class="eyebrow">Our Journey</p>
+            <h2>From the first day<br>to wherever we are now.</h2>
+            <p>School wasn't just a place. It was a chapter filled with people, moments, mistakes, laughter and memories that followed us beyond graduation.</p>
+            <a class="button" href="{{ url_for('main.timeline') }}">Explore Our Timeline <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="journey-orbit" aria-hidden="true"><div class="journey-planet">✦</div><div class="journey-ring ring-a"></div><div class="journey-ring ring-b"></div></div>
+    </div>
+</section>
+
+<section class="section final-cta reveal">
+    <p class="eyebrow">Your Story Belongs Here</p>
+    <h2>The universe is<br><span>still growing.</span></h2>
+    <p>Add your memories, complete your profile, and become part of the constellation.</p>
+    {% if current_user.is_authenticated %}
+    <a class="button" href="{{ url_for('main.profile') }}">Enter My Space <span aria-hidden="true">→</span></a>
+    {% else %}
+    <div class="actions"><a class="button" href="{{ url_for('auth.register') }}">Join the Alumni <span aria-hidden="true">→</span></a><a class="button ghost" href="{{ url_for('auth.login') }}">I already have an account</a></div>
+    {% endif %}
+</section>
+{% endblock %}

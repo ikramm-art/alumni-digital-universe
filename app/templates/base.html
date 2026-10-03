@@ -1,0 +1,1107 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>{% block title %}Alumni Digital Universe{% endblock %}</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+    {% block head %}{% endblock %}
+</head>
+
+<body class="{% if request.endpoint == 'main.home' %}home-page{% elif request.endpoint == 'main.alumni' %}alumni-station-page{% endif %}">
+
+    <!-- =========================================
+         SPACE BACKGROUND
+    ========================================== -->
+
+    <div class="universe-background">
+        <div class="nebula nebula-one"></div>
+        <div class="nebula nebula-two"></div>
+        <div class="nebula nebula-three"></div>
+
+        <div class="space-glow glow-one"></div>
+        <div class="space-glow glow-two"></div>
+
+        <div class="stars stars-small"></div>
+        <div class="stars stars-medium"></div>
+        <div class="stars stars-large"></div>
+    </div>
+
+    <canvas id="constellation" aria-hidden="true"></canvas>
+
+    {% if request.endpoint == 'main.home' %}
+    <div class="alumni-transit" id="alumniTransit" data-alumni-url="{{ url_for('main.alumni') }}" aria-hidden="true">
+        <div class="transit-scene">
+            <div class="transit-warp" aria-hidden="true"></div>
+            <canvas class="transit-stars" id="transitStars" aria-hidden="true"></canvas>
+            <div class="transit-gateway" aria-hidden="true">
+                <div class="gateway-crown"></div>
+                <div class="gateway-light"></div>
+                <div class="gateway-doors">
+                    <div class="gateway-door door-left"></div>
+                    <div class="gateway-door door-right"></div>
+                    <div class="gateway-seam"></div>
+                </div>
+                <div class="gateway-base"></div>
+            </div>
+            <div class="transit-copy" aria-live="polite">
+                <p class="transit-departure">ALUMNI SPACE</p>
+                <p class="transit-destination">TRANSITING TO ALUMNI STATION</p>
+                <p class="transit-approach">APPROACHING ALUMNI STATION</p>
+                <p class="transit-arrival">ARRIVAL CONFIRMED <span>ALUMNI STATION</span></p>
+                <p class="transit-status">SYSTEM ONLINE <i>•</i> NAVIGATION LOCKED <i>•</i> <span class="transit-status-state">TRANSIT</span></p>
+            </div>
+            <div class="transit-vignette" aria-hidden="true"></div>
+        </div>
+    </div>
+    {% endif %}
+
+
+    <!-- =========================================
+         NAVIGATION
+    ========================================== -->
+
+    <header class="site-header">
+
+        <nav class="nav">
+
+            <a
+                class="brand"
+                href="{{ url_for('main.home') }}"
+            >
+                <span class="brand-symbol">✦</span>
+                <span class="brand-main">ALUMNI</span>
+                <span class="brand-accent">VERSE</span>
+            </a>
+
+
+            <!-- DESKTOP NAV -->
+
+            <div class="navlinks">
+                <a href="{{ url_for('main.home') }}" class="nav-link">Home</a>
+                <a href="{{ url_for('main.alumni') }}" class="nav-link">Alumni</a>
+                <a href="{{ url_for('main.galaxy') }}" class="nav-link">Galaxy</a>
+                <a href="{{ url_for('main.memories') }}" class="nav-link">Memories</a>
+                <a href="{{ url_for('main.timeline') }}" class="nav-link">Timeline</a>
+
+                {% if current_user.is_authenticated %}
+                    <a class="nav-account nav-account-identity" href="{{ url_for('main.profile') }}" aria-label="Personal Capsule for {{ current_user.full_name }}">
+                        <span class="account-icon" aria-hidden="true">&#9673;</span>
+                        <span class="nav-account-copy"><strong>{{ current_user.full_name }}</strong><small>{{ 'ADMIN' if current_user.is_admin else 'ALUMNI' }}</small></span>
+                    </a>
+                    {% if current_user.is_admin %}
+                    <a href="{{ url_for('main.admin') }}" class="nav-link command-center-link">Command Center</a>
+                    {% endif %}
+                    <form class="nav-logout-form" method="post" action="{{ url_for('auth.logout') }}">
+                        <button type="submit" class="nav-link logout-link">Logout</button>
+                    </form>
+                {% else %}
+                    <a class="nav-account" href="{{ url_for('auth.login') }}">
+                        <span class="account-icon">&#9673;</span><span>Login</span>
+                    </a>
+                    <a href="{{ url_for('auth.register') }}" class="nav-link register-link">Register</a>
+                {% endif %}
+            </div>
+
+                        <!-- MOBILE MENU BUTTON -->
+
+            <button
+                class="mobile-menu-button"
+                id="mobileMenuButton"
+                type="button"
+                aria-label="Open navigation"
+                aria-expanded="false"
+            >
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
+        </nav>
+
+
+        <!-- MOBILE NAV -->
+
+        <div class="mobile-navigation" id="mobileNavigation">
+            <a href="{{ url_for('main.home') }}">Home</a>
+            <a href="{{ url_for('main.alumni') }}">Alumni</a>
+            <a href="{{ url_for('main.galaxy') }}">Galaxy</a>
+            <a href="{{ url_for('main.memories') }}">Memories</a>
+            <a href="{{ url_for('main.timeline') }}">Timeline</a>
+
+            {% if current_user.is_authenticated %}
+                <a class="mobile-account-identity" href="{{ url_for('main.profile') }}">
+                    <span>{{ current_user.full_name }}</span>
+                    <small>{{ 'ADMIN' if current_user.is_admin else 'ALUMNI' }}</small>
+                </a>
+                {% if current_user.is_admin %}<a class="mobile-command-center" href="{{ url_for('main.admin') }}">Command Center</a>{% endif %}
+                <form class="mobile-logout-form" method="post" action="{{ url_for('auth.logout') }}">
+                    <button type="submit">Logout</button>
+                </form>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}">Login</a>
+                <a href="{{ url_for('auth.register') }}">Register</a>
+            {% endif %}
+        </div>
+
+    </header>
+
+
+    <!-- =========================================
+         FLASH MESSAGES
+    ========================================== -->
+
+    <div class="flash-container">
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+
+            {% for category, message in messages %}
+
+                <div class="flash {{ category }}">
+                    {{ message }}
+                </div>
+
+            {% endfor %}
+
+        {% endwith %}
+
+    </div>
+
+
+    <!-- =========================================
+         PAGE CONTENT
+    ========================================== -->
+
+    <main class="page-content">
+
+        {% block content %}
+        {% endblock %}
+
+    </main>
+
+
+    <!-- =========================================
+         FOOTER
+    ========================================== -->
+
+    <footer class="site-footer">
+
+        <div class="footer-inner">
+
+            <div>
+
+                <div class="footer-brand">
+                    <span class="brand-symbol">✦</span>
+                    <span>ALUMNIVERSE</span>
+                </div>
+
+                <p>
+                    Where memories become a universe.
+                </p>
+
+            </div>
+
+            <span class="footer-copy">
+                © Alumni Digital Universe
+            </span>
+
+        </div>
+
+    </footer>
+
+
+    <!-- =========================================
+         GLOBAL JAVASCRIPT
+    ========================================== -->
+
+    <script>
+
+        /* =========================================
+           MOBILE NAVIGATION
+        ========================================= */
+
+        const mobileMenuButton =
+            document.getElementById("mobileMenuButton");
+
+        const mobileNavigation =
+            document.getElementById("mobileNavigation");
+
+
+        if (mobileMenuButton && mobileNavigation) {
+
+            mobileMenuButton.addEventListener(
+                "click",
+                function () {
+
+                    const isOpen =
+                        mobileNavigation.classList.toggle("open");
+
+                    mobileMenuButton.classList.toggle(
+                        "active",
+                        isOpen
+                    );
+
+                    mobileMenuButton.setAttribute(
+                        "aria-expanded",
+                        String(isOpen)
+                    );
+
+                }
+            );
+
+
+            mobileNavigation
+                .querySelectorAll("a, button")
+                .forEach(function (link) {
+
+                    link.addEventListener(
+                        "click",
+                        function () {
+
+                            mobileNavigation.classList.remove("open");
+
+                            mobileMenuButton.classList.remove("active");
+
+                            mobileMenuButton.setAttribute(
+                                "aria-expanded",
+                                "false"
+                            );
+
+                        }
+                    );
+
+                });
+
+        }
+
+
+        /* =========================================
+           NAVBAR SCROLL EFFECT
+        ========================================= */
+
+        const siteHeader =
+            document.querySelector(".site-header");
+
+
+        window.addEventListener(
+            "scroll",
+            function () {
+
+                if (!siteHeader) {
+                    return;
+                }
+
+                siteHeader.classList.toggle(
+                    "scrolled",
+                    window.scrollY > 30
+                );
+
+            },
+            { passive: true }
+        );
+
+
+        /* =========================================
+           CONSTELLATION / STAR PARTICLES
+        ========================================= */
+
+        const canvas =
+            document.getElementById("constellation");
+
+
+        function startHomeSpace(canvas) {
+
+            const ctx = canvas.getContext("2d");
+
+            if (!ctx) {
+                return;
+            }
+
+            const pointerEnabled =
+                window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+            const reducedMotion =
+                window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+            const mouse = { x: 0, y: 0 };
+            const targetMouse = { x: 0, y: 0 };
+            let width = 0;
+            let height = 0;
+            let pixelRatio = 1;
+            let stars = [];
+            let dust = [];
+
+            const constellations = [
+                [[0.12, 0.25], [0.16, 0.20], [0.205, 0.235], [0.225, 0.30], [0.275, 0.285]],
+                [[0.69, 0.17], [0.725, 0.22], [0.775, 0.205], [0.805, 0.265], [0.855, 0.245]],
+                [[0.55, 0.69], [0.595, 0.645], [0.635, 0.675], [0.68, 0.635]]
+            ];
+
+            const planets = [
+                { x: 0.91, y: 0.48, size: 34, parallax: 0.35, orbitX: 13, orbitY: 7, speed: 0.000014, phase: 0.4, color: "155, 149, 205" },
+                { x: 0.36, y: 0.78, size: 21, parallax: 0.62, orbitX: 8, orbitY: 12, speed: 0.000022, phase: 2.2, color: "126, 174, 190" },
+                { x: 0.46, y: 0.13, size: 13, parallax: 0.85, orbitX: 5, orbitY: 6, speed: 0.000031, phase: 4.1, color: "188, 154, 205" }
+            ];
+
+            function resize() {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+                canvas.width = Math.round(width * pixelRatio);
+                canvas.height = Math.round(height * pixelRatio);
+                canvas.style.width = width + "px";
+                canvas.style.height = height + "px";
+                ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+
+                const starCount = width < 600 ? 42 : width < 1000 ? 64 : 92;
+                const dustCount = width < 600 ? 12 : width < 1000 ? 20 : 28;
+
+                stars = Array.from({ length: starCount }, function () {
+                    return {
+                        x: Math.random() * width,
+                        y: Math.random() * height,
+                        radius: Math.random() * 1.15 + 0.25,
+                        alpha: Math.random() * 0.25 + 0.12,
+                        depth: Math.random(),
+                        phase: Math.random() * Math.PI * 2,
+                        twinkle: Math.random() * 0.7 + 0.35,
+                        driftX: (Math.random() - 0.5) * (0.16 + Math.random() * 0.34),
+                        driftY: (Math.random() - 0.5) * (0.16 + Math.random() * 0.34)
+                    };
+                });
+
+                dust = Array.from({ length: dustCount }, function () {
+                    return {
+                        x: Math.random() * width,
+                        y: Math.random() * height,
+                        radius: Math.random() * 0.8 + 0.25,
+                        alpha: Math.random() * 0.12 + 0.035,
+                        driftX: (Math.random() - 0.5) * 0.42,
+                        driftY: (Math.random() - 0.5) * 0.42,
+                        phase: Math.random() * Math.PI * 2
+                    };
+                });
+            }
+
+            if (pointerEnabled) {
+                window.addEventListener("pointermove", function (event) {
+                    targetMouse.x = (event.clientX / width - 0.5) * 2;
+                    targetMouse.y = (event.clientY / height - 0.5) * 2;
+                }, { passive: true });
+
+                window.addEventListener("pointerleave", function () {
+                    targetMouse.x = 0;
+                    targetMouse.y = 0;
+                }, { passive: true });
+            }
+
+            function drawPlanet(planet, time, depthOffsetX, depthOffsetY) {
+                const phase = time * planet.speed + planet.phase;
+                const x = planet.x * width + Math.cos(phase) * planet.orbitX + depthOffsetX * planet.parallax;
+                const y = planet.y * height + Math.sin(phase * 0.78) * planet.orbitY + depthOffsetY * planet.parallax;
+                const radius = Math.max(planet.size * Math.min(width / 1200, 1), 9);
+                const glow = ctx.createRadialGradient(x, y, radius * 0.08, x, y, radius * 2.7);
+
+                glow.addColorStop(0, "rgba(" + planet.color + ", 0.21)");
+                glow.addColorStop(0.38, "rgba(" + planet.color + ", 0.10)");
+                glow.addColorStop(1, "rgba(" + planet.color + ", 0)");
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(x, y, radius * 2.7, 0, Math.PI * 2);
+                ctx.fill();
+
+                const surface = ctx.createRadialGradient(
+                    x - radius * 0.38, y - radius * 0.4, radius * 0.08,
+                    x, y, radius
+                );
+                surface.addColorStop(0, "rgba(" + planet.color + ", 0.32)");
+                surface.addColorStop(0.7, "rgba(" + planet.color + ", 0.15)");
+                surface.addColorStop(1, "rgba(18, 22, 48, 0.22)");
+                ctx.fillStyle = surface;
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            function draw(time) {
+                ctx.clearRect(0, 0, width, height);
+                mouse.x += (targetMouse.x - mouse.x) * 0.025;
+                mouse.y += (targetMouse.y - mouse.y) * 0.025;
+
+                const driftX = Math.sin(time * 0.000035) * 8;
+                const driftY = Math.cos(time * 0.00003) * 6;
+                const pointerX = pointerEnabled ? mouse.x * 11 : 0;
+                const pointerY = pointerEnabled ? mouse.y * 9 : 0;
+
+                planets.forEach(function (planet) {
+                    drawPlanet(planet, time, pointerX, pointerY);
+                });
+
+                const points = constellations.map(function (pattern, patternIndex) {
+                    const shiftX = Math.sin(time * 0.000018 + patternIndex) * 7 + pointerX * (0.35 + patternIndex * 0.16);
+                    const shiftY = Math.cos(time * 0.000016 + patternIndex) * 5 + pointerY * (0.35 + patternIndex * 0.16);
+                    return pattern.map(function (point) {
+                        return { x: point[0] * width + shiftX, y: point[1] * height + shiftY };
+                    });
+                });
+
+                points.forEach(function (pattern, patternIndex) {
+                    ctx.beginPath();
+                    pattern.forEach(function (point, index) {
+                        if (index === 0) ctx.moveTo(point.x, point.y);
+                        else ctx.lineTo(point.x, point.y);
+                    });
+                    ctx.strokeStyle = "rgba(190, 202, 245, " + (0.09 + patternIndex * 0.012) + ")";
+                    ctx.lineWidth = 0.65;
+                    ctx.stroke();
+
+                    pattern.forEach(function (point, index) {
+                        const shimmer = 0.72 + Math.sin(time * 0.001 + index + patternIndex) * 0.16;
+                        ctx.beginPath();
+                        ctx.arc(point.x, point.y, index % 2 === 0 ? 1.25 : 0.9, 0, Math.PI * 2);
+                        ctx.fillStyle = "rgba(222, 229, 255, " + shimmer + ")";
+                        ctx.fill();
+                    });
+                });
+
+                stars.forEach(function (star) {
+                    const elapsed = time * 0.001;
+                    const driftedX = ((star.x + elapsed * star.driftX) % width + width) % width;
+                    const driftedY = ((star.y + elapsed * star.driftY) % height + height) % height;
+                    const x = driftedX + driftX * star.depth + pointerX * star.depth * 0.55;
+                    const y = driftedY + driftY * star.depth + pointerY * star.depth * 0.55;
+                    const alpha = Math.max(0.035, star.alpha + Math.sin(time * 0.001 * star.twinkle + star.phase) * 0.045);
+
+                    ctx.beginPath();
+                    ctx.arc(x, y, star.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = "rgba(220, 229, 255, " + alpha + ")";
+                    ctx.fill();
+                });
+
+                dust.forEach(function (particle) {
+                    const elapsed = time * 0.001;
+                    const x = ((particle.x + elapsed * particle.driftX) % width + width) % width;
+                    const y = ((particle.y + elapsed * particle.driftY) % height + height) % height;
+                    const shimmer = particle.alpha * (0.75 + Math.sin(time * 0.0007 + particle.phase) * 0.2);
+                    ctx.beginPath();
+                    ctx.arc(x + pointerX * 0.2, y + pointerY * 0.2, particle.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = "rgba(205, 218, 255, " + shimmer + ")";
+                    ctx.fill();
+                });
+
+                if (!reducedMotion) {
+                    requestAnimationFrame(draw);
+                }
+            }
+
+            resize();
+            if (reducedMotion) {
+                draw(0);
+            } else {
+                requestAnimationFrame(draw);
+            }
+            window.addEventListener("resize", resize, { passive: true });
+        }
+
+
+        if (canvas && document.body.classList.contains("home-page")) {
+            startHomeSpace(canvas);
+        } else if (canvas) {
+
+            const isAlumniStationPage =
+                document.body.classList.contains("alumni-station-page");
+            const alumniReducedMotion =
+                window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            const alumniPointerEnabled =
+                window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+            const ctx =
+                canvas.getContext("2d");
+
+            let stars = [];
+
+            let mouse = {
+                x: window.innerWidth / 2,
+                y: window.innerHeight / 2
+            };
+
+            let targetMouse = {
+                x: window.innerWidth / 2,
+                y: window.innerHeight / 2
+            };
+
+
+            function resizeCanvas() {
+
+                const ratio =
+                    Math.min(window.devicePixelRatio || 1, 2);
+
+                canvas.width =
+                    window.innerWidth * ratio;
+
+                canvas.height =
+                    window.innerHeight * ratio;
+
+                canvas.style.width =
+                    window.innerWidth + "px";
+
+                canvas.style.height =
+                    window.innerHeight + "px";
+
+                ctx.setTransform(
+                    ratio,
+                    0,
+                    0,
+                    ratio,
+                    0,
+                    0
+                );
+
+            }
+
+
+            function createStars() {
+
+                stars = [];
+
+                const width =
+                    window.innerWidth;
+
+                const amount = isAlumniStationPage
+                    ? (width < 600 ? 26 : width < 1000 ? 48 : 72)
+                    : width < 600
+                        ? 45
+                        : width < 1000
+                            ? 75
+                            : 115;
+
+
+                for (let i = 0; i < amount; i++) {
+
+                    stars.push({
+
+                        x: Math.random() * width,
+
+                        y:
+                            Math.random() *
+                            window.innerHeight,
+
+                        radius:
+                            Math.random() * 1.4 + 0.25,
+
+                        alpha:
+                            Math.random() * 0.45 + 0.15,
+
+                        depth:
+                            Math.random(),
+
+                        phase:
+                            Math.random() *
+                            Math.PI *
+                            2,
+
+                        drift:
+                            Math.random() * 0.12 + 0.03
+
+                    });
+
+                }
+
+            }
+
+
+            if (!isAlumniStationPage || (alumniPointerEnabled && !alumniReducedMotion)) {
+                window.addEventListener(
+                    "mousemove",
+                    function (event) {
+
+                        targetMouse.x = event.clientX;
+                        targetMouse.y = event.clientY;
+
+                    },
+                    { passive: true }
+                );
+            }
+
+
+            function drawStars(time) {
+
+                const width =
+                    window.innerWidth;
+
+                const height =
+                    window.innerHeight;
+
+
+                ctx.clearRect(
+                    0,
+                    0,
+                    width,
+                    height
+                );
+
+
+                mouse.x +=
+                    (targetMouse.x - mouse.x) * 0.035;
+
+                mouse.y +=
+                    (targetMouse.y - mouse.y) * 0.035;
+
+
+                const mouseX =
+                    (mouse.x - width / 2) / width;
+
+                const mouseY =
+                    (mouse.y - height / 2) / height;
+
+
+                stars.forEach(function (star) {
+
+                    const parallax =
+                        4 + star.depth * 14;
+
+
+                    const x =
+                        star.x +
+                        mouseX * parallax;
+
+                    const y =
+                        star.y +
+                        mouseY * parallax;
+
+
+                    const twinkle =
+                        Math.sin(
+                            time * 0.001 * star.drift +
+                            star.phase
+                        );
+
+
+                    const alpha =
+                        Math.max(
+                            0.04,
+                            star.alpha +
+                            twinkle * 0.08
+                        );
+
+
+                    ctx.beginPath();
+
+                    ctx.arc(
+                        x,
+                        y,
+                        star.radius,
+                        0,
+                        Math.PI * 2
+                    );
+
+                    ctx.fillStyle =
+                        `rgba(220,225,255,${alpha})`;
+
+                    ctx.fill();
+
+                });
+
+
+                /* Subtle constellation lines */
+
+                for (
+                    let i = 0;
+                    i < stars.length;
+                    i++
+                ) {
+
+                    for (
+                        let j = i + 1;
+                        j < stars.length;
+                        j++
+                    ) {
+
+                        const a = stars[i];
+
+                        const b = stars[j];
+
+
+                        const aParallax = 4 + a.depth * 14;
+                        const bParallax = 4 + b.depth * 14;
+                        const aX = a.x + (isAlumniStationPage ? mouseX * aParallax : 0);
+                        const aY = a.y + (isAlumniStationPage ? mouseY * aParallax : 0);
+                        const bX = b.x + (isAlumniStationPage ? mouseX * bParallax : 0);
+                        const bY = b.y + (isAlumniStationPage ? mouseY * bParallax : 0);
+                        const dx = aX - bX;
+                        const dy = aY - bY;
+
+                        const distance =
+                            Math.sqrt(
+                                dx * dx +
+                                dy * dy
+                            );
+
+
+                        if (distance < 115) {
+
+                            const opacity =
+                                (
+                                    1 -
+                                    distance / 115
+                                ) * 0.055;
+
+
+                            ctx.beginPath();
+
+                            ctx.moveTo(
+                                aX,
+                                aY
+                            );
+
+                            ctx.lineTo(
+                                bX,
+                                bY
+                            );
+
+                            ctx.strokeStyle =
+                                `rgba(160,175,235,${opacity})`;
+
+                            ctx.lineWidth = 0.45;
+
+                            ctx.stroke();
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+
+            function animate(time) {
+
+                drawStars(time);
+
+                if (!isAlumniStationPage || !alumniReducedMotion) {
+                    requestAnimationFrame(animate);
+                }
+
+            }
+
+
+            resizeCanvas();
+
+            createStars();
+
+            if (!isAlumniStationPage || !alumniReducedMotion) {
+                requestAnimationFrame(animate);
+            }
+
+
+            window.addEventListener(
+                "resize",
+                function () {
+
+                    resizeCanvas();
+
+                    createStars();
+
+                }
+            );
+
+        }
+
+
+        /* =========================================
+           SCROLL REVEAL
+        ========================================= */
+
+        const revealElements =
+            document.querySelectorAll(
+                ".reveal, .glass-card, .memory-card, .alumni-card"
+            );
+
+
+        if (
+            "IntersectionObserver" in window &&
+            revealElements.length
+        ) {
+
+            const observer =
+                new IntersectionObserver(
+                    function (entries) {
+
+                        entries.forEach(
+                            function (entry) {
+
+                                if (entry.isIntersecting) {
+
+                                    entry.target.classList.add(
+                                        "visible"
+                                    );
+
+                                    observer.unobserve(
+                                        entry.target
+                                    );
+
+                                }
+
+                            }
+                        );
+
+                    },
+                    {
+                        threshold: 0.08
+                    }
+                );
+
+
+            revealElements.forEach(
+                function (element) {
+                    observer.observe(element);
+                }
+            );
+
+        } else {
+
+            revealElements.forEach(
+                function (element) {
+                    element.classList.add("visible");
+                }
+            );
+
+        }
+
+
+        (function () {
+            const overlay = document.getElementById("alumniTransit");
+            const transitCanvas = document.getElementById("transitStars");
+            const transitContext = transitCanvas && transitCanvas.getContext("2d");
+            const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+            const alumniPath = overlay ? overlay.dataset.alumniUrl : "";
+            let transitActive = false;
+            let animationFrame = 0;
+            let lastFrame = 0;
+            let canvasWidth = 0;
+            let canvasHeight = 0;
+            let stars = [];
+            let destination = "";
+            let phase = "";
+            let arrivalScheduled = false;
+
+            if (!overlay || !transitCanvas || !transitContext) {
+                return;
+            }
+
+            function resizeTransitCanvas() {
+                const ratio = Math.min(window.devicePixelRatio || 1, 1.25);
+                canvasWidth = window.innerWidth;
+                canvasHeight = window.innerHeight;
+                transitCanvas.width = Math.round(canvasWidth * ratio);
+                transitCanvas.height = Math.round(canvasHeight * ratio);
+                transitCanvas.style.width = canvasWidth + "px";
+                transitCanvas.style.height = canvasHeight + "px";
+                transitContext.setTransform(ratio, 0, 0, ratio, 0, 0);
+            }
+
+            function setPhase(nextPhase) {
+                if (phase === nextPhase) return;
+                phase = nextPhase;
+                overlay.dataset.phase = phase;
+
+                const status = overlay.querySelector(".transit-status-state");
+                if (status) {
+                    status.textContent = phase === "approach" ? "STATION APPROACH" :
+                        phase === "open" ? "HANGAR ACCESS" : "TRANSIT";
+                }
+            }
+
+            function seedStars() {
+                const count = window.innerWidth < 600 ? 28 : 52;
+                stars = Array.from({ length: count }, function () {
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = Math.random() * Math.min(canvasWidth, canvasHeight) * 0.12;
+                    return {
+                        angle: angle,
+                        distance: distance,
+                        speed: Math.random() * 0.65 + 0.35,
+                        phase: Math.random() * Math.PI * 2,
+                        radius: Math.random() * 1.1 + 0.35,
+                        alpha: Math.random() * 0.22 + 0.12
+                    };
+                });
+            }
+
+            function drawTransit(progress, frameScale, elapsed) {
+                transitContext.clearRect(0, 0, canvasWidth, canvasHeight);
+                if (progress <= 0) return;
+
+                const centerX = canvasWidth / 2;
+                const centerY = canvasHeight / 2;
+                const acceleration = Math.max(0, Math.min(progress, 1));
+                const speedVariation = 0.9 + Math.sin(elapsed * 0.0017) * 0.07 + Math.sin(elapsed * 0.00073 + 1.3) * 0.03;
+                const maxDistance = Math.hypot(canvasWidth, canvasHeight) * 0.62;
+
+                stars.forEach(function (star) {
+                    const previousDistance = star.distance;
+                    const individualSpeed = speedVariation + Math.sin(elapsed * 0.0011 + star.phase) * 0.035;
+                    star.distance += (0.05 + acceleration * 1.5) * star.speed * individualSpeed * frameScale;
+
+                    if (star.distance > maxDistance) {
+                        star.angle = Math.random() * Math.PI * 2;
+                        star.distance = Math.random() * 24;
+                    }
+
+                    const x = centerX + Math.cos(star.angle) * star.distance;
+                    const y = centerY + Math.sin(star.angle) * star.distance;
+                    const trail = Math.max(1, (star.distance - previousDistance) * (4 + acceleration * 7));
+
+                    transitContext.beginPath();
+                    transitContext.moveTo(x - Math.cos(star.angle) * trail, y - Math.sin(star.angle) * trail);
+                    transitContext.lineTo(x, y);
+                    transitContext.strokeStyle = "rgba(190, 213, 255, " + (star.alpha * (0.28 + acceleration * 0.46)) + ")";
+                    transitContext.lineWidth = star.radius * (0.45 + acceleration * 0.55);
+                    transitContext.stroke();
+                });
+            }
+
+            function resetTransit() {
+                transitActive = false;
+                arrivalScheduled = false;
+                phase = "";
+                window.cancelAnimationFrame(animationFrame);
+                animationFrame = 0;
+                overlay.classList.remove("is-active", "is-leaving");
+                delete overlay.dataset.phase;
+                overlay.setAttribute("aria-hidden", "true");
+                document.body.classList.remove("is-transiting");
+            }
+
+            function animateTransit(timestamp) {
+                if (!transitActive) return;
+                if (!lastFrame) lastFrame = timestamp;
+
+                const elapsed = timestamp - transitStartedAt;
+                const frameScale = Math.min((timestamp - lastFrame) / 16.67, 2);
+                lastFrame = timestamp;
+
+                let progress = 0;
+                if (elapsed < 1000) {
+                    setPhase("departure");
+                } else if (elapsed < 5000) {
+                    setPhase("transit");
+                    const ramp = Math.min((elapsed - 1000) / 1000, 1);
+                    progress = ramp * ramp * (3 - 2 * ramp);
+                } else if (elapsed < 6000) {
+                    setPhase("approach");
+                    const approach = (elapsed - 5000) / 1000;
+                    const ease = approach * approach * (3 - 2 * approach);
+                    progress = 1 - ease * 0.95;
+                } else {
+                    setPhase("open");
+                    progress = 0.05;
+                }
+
+                drawTransit(progress, frameScale, elapsed);
+
+                if (elapsed >= 6850 && !arrivalScheduled) {
+                    arrivalScheduled = true;
+                    overlay.classList.add("is-leaving");
+                    window.setTimeout(function () {
+                        try {
+                            window.sessionStorage.setItem("alumniStationArrival", "1");
+                        } catch (storageError) {
+                            // The transition still navigates if session storage is unavailable.
+                        }
+                        window.location.assign(destination);
+                    }, 130);
+                    return;
+                }
+
+                animationFrame = window.requestAnimationFrame(animateTransit);
+            }
+
+            let transitStartedAt = 0;
+
+            document.addEventListener("click", function (event) {
+                const link = event.target.closest && event.target.closest("a[href]");
+                if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                if (link.target && link.target !== "_self") return;
+                if (link.hasAttribute("download")) return;
+                if (reducedMotion.matches || window.location.pathname !== "/") return;
+
+                const target = new URL(link.href, window.location.href);
+                if (target.origin !== window.location.origin || target.pathname !== alumniPath) return;
+
+                event.preventDefault();
+                if (transitActive) return;
+
+                destination = target.href;
+                transitActive = true;
+                transitStartedAt = 0;
+                lastFrame = 0;
+                resizeTransitCanvas();
+                seedStars();
+                overlay.setAttribute("aria-hidden", "false");
+                overlay.classList.add("is-active");
+                document.body.classList.add("is-transiting");
+                setPhase("departure");
+
+                animationFrame = window.requestAnimationFrame(function start(timestamp) {
+                    transitStartedAt = timestamp;
+                    animateTransit(timestamp);
+                });
+            });
+
+            window.addEventListener("resize", function () {
+                if (!transitActive) return;
+                resizeTransitCanvas();
+                seedStars();
+            }, { passive: true });
+
+            window.addEventListener("pageshow", resetTransit);
+        })();
+
+        (function () {
+            if (!document.querySelector(".alumni-page")) return;
+
+            const arrivalKey = "alumniStationArrival";
+            let arrivedFromTransit = false;
+
+            try {
+                arrivedFromTransit = window.sessionStorage.getItem(arrivalKey) === "1";
+                if (arrivedFromTransit) {
+                    window.sessionStorage.removeItem(arrivalKey);
+                }
+            } catch (storageError) {
+                return;
+            }
+
+            if (!arrivedFromTransit || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+                return;
+            }
+
+            const hero = document.querySelector(".alumni-hero");
+            if (!hero) return;
+
+            document.body.classList.add("alumni-arrival-enter");
+            hero.getBoundingClientRect();
+            window.requestAnimationFrame(function () {
+                document.body.classList.add("alumni-arrival-revealed");
+            });
+
+            window.setTimeout(function () {
+                document.body.classList.remove("alumni-arrival-enter", "alumni-arrival-revealed");
+            }, 2700);
+        })();
+
+    </script>
+
+
+    {% block scripts %}
+    {% endblock %}
+
+</body>
+</html>

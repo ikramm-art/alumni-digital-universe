@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ user.full_name }} · AlumniVerse{% endblock %}
+{% block content %}
+<section class="profile-head">
+<div class="avatar huge">{% if user.profile_photo %}<img src="{{ url_for('main.uploaded_file', filename=user.profile_photo) }}" alt="{{ user.full_name }} profile photo">{% else %}{{ user.full_name[:1]|upper }}{% endif %}</div>
+<div><p class="eyebrow capsule-eyebrow">PERSONAL CAPSULE{% if not public %}<span class="capsule-role">{{ 'ADMIN' if current_user.is_admin else 'ALUMNI' }}</span>{% endif %}</p><h1>{{ user.full_name }}</h1><p>{{ user.bio or "Write your story here." }}</p></div>
+</section>
+
+<section class="profile-grid">
+<div class="panel">
+<h2>Journey</h2>
+<p><b>Class:</b> {{ user.class_name or "—" }}</p><p><b>Generation:</b> {{ user.generation or "—" }}</p>
+<p><b>University:</b> {{ user.university or "—" }}</p><p><b>Major:</b> {{ user.major or "—" }}</p>
+<p><b>Occupation:</b> {{ user.occupation or "—" }}</p><p><b>City:</b> {{ user.city or "—" }}</p>
+</div>
+
+{% if not public %}
+<div class="panel"><h2>Edit My Profile</h2>
+<form method="post" enctype="multipart/form-data">
+<input name="full_name" value="{{ user.full_name }}" placeholder="Nama">
+<input name="class_name" value="{{ user.class_name or '' }}" placeholder="Kelas">
+<input name="generation" value="{{ user.generation or '' }}" placeholder="Angkatan">
+<div class="two"><input name="entry_year" value="{{ user.entry_year or '' }}" placeholder="Tahun masuk"><input name="graduation_year" value="{{ user.graduation_year or '' }}" placeholder="Tahun lulus"></div>
+<textarea name="bio" placeholder="Bio / cerita singkat">{{ user.bio or '' }}</textarea>
+<input name="university" value="{{ user.university or '' }}" placeholder="Universitas">
+<input name="major" value="{{ user.major or '' }}" placeholder="Jurusan">
+<input name="university_year" value="{{ user.university_year or '' }}" placeholder="Tahun masuk universitas">
+<input name="occupation" value="{{ user.occupation or '' }}" placeholder="Pekerjaan / bidang">
+<input name="city" value="{{ user.city or '' }}" placeholder="Kota">
+<input name="profile_photo" type="file" accept="image/*">
+<div class="two"><input name="instagram" value="{{ user.instagram or '' }}" placeholder="Instagram"><input name="github" value="{{ user.github or '' }}" placeholder="GitHub"></div>
+<input name="linkedin" value="{{ user.linkedin or '' }}" placeholder="LinkedIn">
+<button class="button">Save Profile</button>
+</form></div>
+
+<div class="panel"><h2>⭐ Create Highlight</h2><p>Bikin sorotan seperti University, Achievement, Career, Journey, atau Favorite Memory.</p>
+<form method="post" action="{{ url_for('main.add_highlight') }}" enctype="multipart/form-data"><input name="title" placeholder="Judul sorotan" required><textarea name="description" placeholder="Ceritakan..."></textarea><input name="image" type="file" accept="image/*"><button class="button">Add Highlight</button></form>
+</div>
+
+<div class="panel"><h2>📸 Add Memory</h2>
+<form method="post" action="{{ url_for('main.add_memory') }}" enctype="multipart/form-data"><input name="title" placeholder="Judul kenangan" required><textarea name="description" placeholder="Cerita kenangan"></textarea><div class="two"><input name="year" placeholder="Tahun"><input name="location" placeholder="Lokasi"></div><select name="category"><option>School</option><option>Class</option><option>Event</option><option>Trip</option><option>Graduation</option><option>Reunion</option><option>Random</option><option>Other</option></select><input name="image" type="file" accept="image/*"><button class="button">Submit Memory</button></form></div>
+{% endif %}
+</section>
+
+<section class="section"><h2>⭐ Highlights</h2><div class="grid">
+{% for h in user.highlights %}<article class="card"><div class="cardbody"><small>HIGHLIGHT</small><h3>{{ h.title }}</h3><p>{{ h.description }}</p></div></article>{% else %}<div class="empty">No highlights yet.</div>{% endfor %}
+</div></section>
+
+<section class="section"><h2>📸 Memories</h2><div class="grid">
+{% for m in memories %}<article class="card"><div class="cardbody"><small>{{ m.status|upper }} · {{ m.year or "—" }}</small><h3>{{ m.title }}</h3><p>{{ m.description }}</p></div></article>{% else %}<div class="empty">No memories yet.</div>{% endfor %}
+</div></section>
+{% endblock %}

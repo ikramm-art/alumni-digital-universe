@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Login · AlumniVerse{% endblock %}
+{% block content %}
+<section class="auth account-auth">
+    <div class="panel">
+        <p class="eyebrow">PERSONAL CAPSULE</p>
+        <h1>Welcome back.</h1>
+        <p>Sign in to continue to your personal alumni space.</p>
+        <form method="post" class="auth-form">
+            <label for="login-email">Email</label>
+            <input id="login-email" name="email" type="email" autocomplete="email" required maxlength="160">
+            <label for="login-password">Password</label>
+            <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+            <button class="button" type="submit">Login</button>
+        </form>
+        <p>Belum punya akun? <a href="{{ url_for('auth.register') }}">Register</a></p>
+    </div>
+</section>
+{% endblock %}

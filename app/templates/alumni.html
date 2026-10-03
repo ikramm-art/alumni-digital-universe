@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Alumni Space Station — Alumni Digital Universe{% endblock %}
+
+{% block content %}
+<div class="alumni-page">
+    <section class="alumni-hero">
+        <div class="alumni-hero-copy">
+            <p class="eyebrow">Alumni Space Station</p>
+            <h1>THE <span>CREW</span></h1>
+            <p class="alumni-hero-lead">A living archive of the people who share our generation. Find a familiar face, follow a new orbit, and reconnect across the universe.</p>
+            <div class="station-readout">
+                <span class="readout-dot" aria-hidden="true"></span>
+                <span>CREW REGISTRY</span>
+                <strong>{{ total_count }} <small>members</small></strong>
+            </div>
+        </div>
+
+        <div class="station-visual" role="img" aria-label="Orbital alumni hub showing crew members around a central archive">
+            <div class="station-halo halo-outer"></div>
+            <div class="station-halo halo-inner"></div>
+            <div class="station-orbit orbit-horizontal"></div>
+            <div class="station-orbit orbit-tilted"></div>
+            <div class="station-orbit orbit-vertical"></div>
+            <div class="station-core">
+                <span class="core-kicker">GENERATION</span>
+                <span class="core-symbol" aria-hidden="true">✦</span>
+                <strong>ALUMNI<br>ARCHIVE</strong>
+                <span class="core-status"><i></i> CONNECTED</span>
+            </div>
+            {% for member in hub_crew %}
+            <a class="station-node node-{{ loop.index }}" href="{{ url_for('main.profile_public', user_id=member.id) }}" title="{{ member.full_name }} — open profile" aria-label="{{ member.full_name }} — open profile">
+                <span class="node-point" aria-hidden="true"></span>
+                <span class="node-label">{{ member.full_name }}</span>
+            </a>
+            {% endfor %}
+            <span class="station-coordinate coordinate-one">N 07° · CREW</span>
+            <span class="station-coordinate coordinate-two">ORBITAL ARCHIVE</span>
+        </div>
+    </section>
+
+    <section class="contribution-cta" aria-labelledby="contribution-heading">
+        {% if current_user.is_authenticated %}
+        <div class="contribution-copy">
+            <p class="eyebrow">PERSONAL CAPSULE</p>
+            <h2 id="contribution-heading">Welcome back, {{ current_user.full_name }}.</h2>
+            {% if current_user.is_admin %}
+            <p>Share a moment with the community or review new memories waiting at the station.</p>
+            {% else %}
+            <p>Add a memory to the universe. Your story belongs among the crew.</p>
+            {% endif %}
+        </div>
+        <div class="contribution-actions">
+            <a class="button" href="{{ url_for('main.add_memory') }}">Upload Memory <span aria-hidden="true">&#8594;</span></a>
+            {% if current_user.is_admin %}
+            <a class="button ghost" href="{{ url_for('main.admin') }}">Review submissions</a>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="contribution-copy">
+            <p class="eyebrow">YOUR STORY BELONGS HERE</p>
+            <h2 id="contribution-heading">You're part of this universe too.</h2>
+            <p>Create your alumni account to add your story and memories.</p>
+        </div>
+        <div class="contribution-actions">
+            <a class="button" href="{{ url_for('auth.register') }}">Create Account <span aria-hidden="true">&#8594;</span></a>
+            <a class="contribution-login" href="{{ url_for('auth.login') }}">Already have an account? Login</a>
+        </div>
+        {% endif %}
+    </section>
+
+    <section class="crew-directory" aria-labelledby="crew-heading">
+        <div class="directory-heading">
+            <div>
+                <p class="eyebrow">Personnel Files</p>
+                <h2 id="crew-heading">Crew directory</h2>
+                <p>Every profile is a point of connection in our shared story.</p>
+            </div>
+            <div class="directory-count"><span>{{ alumni|length }}</span> / {{ total_count }} <small>matching crew</small></div>
+        </div>
+
+        <form class="crew-filters" method="get" action="{{ url_for('main.alumni') }}">
+            <label class="filter-search">
+                <span class="filter-label">Search crew</span>
+                <span class="search-control"><span aria-hidden="true">⌕</span><input type="search" name="q" value="{{ q }}" placeholder="Search by name" autocomplete="off"></span>
+            </label>
+            <label>
+                <span class="filter-label">Generation</span>
+                <select name="generation">
+                    <option value="">All generations</option>
+                    {% for value in generations %}<option value="{{ value }}" {% if generation == value %}selected{% endif %}>{{ value }}</option>{% endfor %}
+                </select>
+            </label>
+            <label>
+                <span class="filter-label">Graduation year</span>
+                <select name="graduation_year">
+                    <option value="">All years</option>
+                    {% for value in graduation_years %}<option value="{{ value }}" {% if graduation_year|string == value|string %}selected{% endif %}>{{ value }}</option>{% endfor %}
+                </select>
+            </label>
+            <label>
+                <span class="filter-label">Class</span>
+                <select name="class_name">
+                    <option value="">All classes</option>
+                    {% for value in classes %}<option value="{{ value }}" {% if class_name == value %}selected{% endif %}>{{ value }}</option>{% endfor %}
+                </select>
+            </label>
+            <div class="filter-actions">
+                <button class="button filter-submit" type="submit">Filter crew <span aria-hidden="true">→</span></button>
+                {% if q or generation or graduation_year or class_name %}<a class="filter-reset" href="{{ url_for('main.alumni') }}">Clear filters</a>{% endif %}
+            </div>
+        </form>
+
+        <div class="crew-grid">
+            {% for a in alumni %}
+            <a class="crew-card" href="{{ url_for('main.profile_public', user_id=a.id) }}">
+                <div class="crew-card-head">
+                    <div class="crew-avatar">
+                        {% if a.profile_photo %}<img src="{{ url_for('main.uploaded_file', filename=a.profile_photo) }}" alt="{{ a.full_name }}" loading="lazy">{% else %}<span>{{ a.full_name[:1]|upper }}</span>{% endif %}
+                    </div>
+                    <span class="crew-record"><i></i> Personnel file</span>
+                    <span class="crew-open" aria-hidden="true">↗</span>
+                </div>
+                <div class="crew-card-body">
+                    <h3>{{ a.full_name }}</h3>
+                    <div class="crew-tags">
+                        {% if a.class_name %}<span>{{ a.class_name }}</span>{% endif %}
+                        {% if a.entry_year %}<span>Cohort {{ a.entry_year }}</span>{% endif %}
+                        {% if a.generation %}<span>Generation {{ a.generation }}</span>{% endif %}
+                        {% if a.graduation_year %}<span>Class of {{ a.graduation_year }}</span>{% endif %}
+                    </div>
+                    {% if a.university or a.occupation %}
+                    <div class="crew-details">
+                        {% if a.university %}<p><span>UNIVERSITY</span>{{ a.university }}</p>{% endif %}
+                        {% if a.occupation %}<p><span>OCCUPATION</span>{{ a.occupation }}</p>{% endif %}
+                    </div>
+                    {% else %}<p class="crew-no-details">Profile details are still being charted.</p>{% endif %}
+                </div>
+                <span class="crew-card-edge" aria-hidden="true"></span>
+            </a>
+            {% else %}
+            <div class="crew-empty">
+                <span class="empty-signal" aria-hidden="true">✦</span>
+                <p class="eyebrow">No matching records</p>
+                <h3>{% if total_count %}No crew matched those controls.{% else %}The station is ready for its first crew.{% endif %}</h3>
+                <p>{% if total_count %}Try another name or clear your filters to see the full directory.{% else %}Alumni profiles will appear here as they join the universe.{% endif %}</p>
+                {% if q or generation or graduation_year or class_name %}<a class="filter-reset" href="{{ url_for('main.alumni') }}">Clear filters</a>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    const alumniPage = document.querySelector(".alumni-page");
+    if (!alumniPage) return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const filterForm = alumniPage.querySelector(".crew-filters");
+
+    if (filterForm) {
+        let feedbackTimer = 0;
+        const showFilterFeedback = function () {
+            filterForm.classList.add("is-adjusting");
+            window.clearTimeout(feedbackTimer);
+            feedbackTimer = window.setTimeout(function () {
+                filterForm.classList.remove("is-adjusting");
+            }, 420);
+        };
+
+        filterForm.addEventListener("input", showFilterFeedback);
+        filterForm.addEventListener("change", showFilterFeedback);
+    }
+
+    if (!reducedMotion.matches && finePointer.matches) {
+        let pointerX = 0;
+        let pointerY = 0;
+        let framePending = false;
+
+        function applyParallax() {
+            document.body.style.setProperty("--alumni-nebula-x", (pointerX * 14).toFixed(1) + "px");
+            document.body.style.setProperty("--alumni-nebula-y", (pointerY * 10).toFixed(1) + "px");
+            document.body.style.setProperty("--alumni-stars-x", (pointerX * 4).toFixed(1) + "px");
+            document.body.style.setProperty("--alumni-stars-y", (pointerY * 3).toFixed(1) + "px");
+            document.body.style.setProperty("--alumni-station-x", (pointerX * 6).toFixed(1) + "px");
+            document.body.style.setProperty("--alumni-station-y", (pointerY * 4).toFixed(1) + "px");
+            framePending = false;
+        }
+
+        window.addEventListener("pointermove", function (event) {
+            pointerX = (event.clientX / window.innerWidth - 0.5) * 2;
+            pointerY = (event.clientY / window.innerHeight - 0.5) * 2;
+            if (!framePending) {
+                framePending = true;
+                window.requestAnimationFrame(applyParallax);
+            }
+        }, { passive: true });
+
+        window.addEventListener("pointerleave", function () {
+            pointerX = 0;
+            pointerY = 0;
+            if (!framePending) {
+                framePending = true;
+                window.requestAnimationFrame(applyParallax);
+            }
+        }, { passive: true });
+    }
+
+    if (reducedMotion.matches || !("IntersectionObserver" in window)) return;
+
+    const revealTargets = Array.from(alumniPage.querySelectorAll(
+        ".directory-heading, .crew-filters, .crew-card, .crew-empty"
+    ));
+
+    if (!revealTargets.length) return;
+
+    revealTargets.forEach(function (target, index) {
+        target.classList.add("alumni-reveal-pending");
+        if (target.classList.contains("crew-card")) {
+            const delay = Math.min(index % 7, 6) * (window.innerWidth < 600 ? 45 : 70);
+            target.style.setProperty("--alumni-reveal-delay", delay + "ms");
+        }
+    });
+
+    const observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+
+            const target = entry.target;
+            const delay = parseInt(target.style.getPropertyValue("--alumni-reveal-delay"), 10) || 0;
+            target.classList.add("alumni-reveal-visible");
+            observer.unobserve(target);
+
+            window.setTimeout(function () {
+                target.classList.remove("alumni-reveal-pending", "alumni-reveal-visible");
+                target.style.removeProperty("--alumni-reveal-delay");
+            }, 700 + delay);
+        });
+    }, { threshold: 0.08, rootMargin: "0px 0px -24px 0px" });
+
+    revealTargets.forEach(function (target) {
+        observer.observe(target);
+    });
+})();
+</script>
+{% endblock %}

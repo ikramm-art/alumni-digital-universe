@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Add a memory · AlumniVerse{% endblock %}
+{% block content %}
+<section class="section memory-submit-page">
+    <div class="memory-submit-intro">
+        <p class="eyebrow">CONTRIBUTE TO THE ARCHIVE</p>
+        <h1>Add a memory</h1>
+        <p>Share a moment from your journey with the alumni community. Your submission stays private until an admin reviews it.</p>
+    </div>
+
+    <form class="panel memory-upload-form" method="post" enctype="multipart/form-data" action="{{ url_for('main.add_memory') }}">
+        <label for="memory-title">Title</label>
+        <input id="memory-title" name="title" maxlength="160" required autocomplete="off" placeholder="Give this memory a title">
+
+        <label for="memory-description">Story</label>
+        <textarea id="memory-description" name="description" maxlength="5000" rows="5" placeholder="What would you like the crew to remember?"></textarea>
+
+        <div class="memory-upload-fields">
+            <div>
+                <label for="memory-year">Year <span>(optional)</span></label>
+                <input id="memory-year" name="year" type="number" min="1900" max="2100" inputmode="numeric" placeholder="e.g. 2018">
+            </div>
+            <div>
+                <label for="memory-location">Location <span>(optional)</span></label>
+                <input id="memory-location" name="location" maxlength="160" placeholder="Where did it happen?">
+            </div>
+            <div>
+                <label for="memory-category">Category</label>
+                <select id="memory-category" name="category" required>
+                    {% for category in categories %}<option value="{{ category }}">{{ category }}</option>{% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <label for="memory-image">Photo <span>(optional)</span></label>
+        <input id="memory-image" class="memory-image-input" name="image" type="file" accept="image/png,image/jpeg,image/webp" capture="environment">
+        <p class="upload-help">Choose a photo from your gallery or camera. PNG, JPG, or WebP · up to 10 MB.</p>
+        <figure class="memory-preview" id="memoryPreview" hidden>
+            <img id="memoryPreviewImage" alt="Preview of selected memory photo">
+            <figcaption id="memoryPreviewName"></figcaption>
+        </figure>
+
+        <div class="memory-upload-actions">
+            <button class="button" type="submit">Submit for review</button>
+            <a class="button ghost" href="{{ url_for('main.alumni') }}">Back to Alumni</a>
+        </div>
+    </form>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+    const input = document.getElementById("memory-image");
+    const preview = document.getElementById("memoryPreview");
+    const image = document.getElementById("memoryPreviewImage");
+    const name = document.getElementById("memoryPreviewName");
+    if (!input || !preview || !image || !name) return;
+
+    let previewUrl = "";
+    input.addEventListener("change", function () {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        const file = input.files && input.files[0];
+        if (!file) {
+            preview.hidden = true;
+            image.removeAttribute("src");
+            name.textContent = "";
+            return;
+        }
+        previewUrl = URL.createObjectURL(file);
+        image.src = previewUrl;
+        name.textContent = file.name;
+        preview.hidden = false;
+    });
+    window.addEventListener("pagehide", function () {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+    }, { once: true });
+})();
+</script>
+{% endblock %}

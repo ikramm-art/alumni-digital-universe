@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block content %}<section class="section galaxy"><p class="eyebrow">ALUMNI GALAXY</p><h1>Our Stars</h1><p>Every alumni is a star in the same constellation.</p>
+<div class="starfield">{% for a in alumni %}<a class="star" href="{{ url_for('main.profile_public', user_id=a.id) }}" style="--x: {{ (a.id * 37) % 90 + 5 }}%; --y: {{ (a.id * 61) % 75 + 10 }}%"><span>✦</span><b>{{ a.full_name }}</b></a>{% endfor %}</div></section>{% endblock %}
