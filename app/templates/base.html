@@ -82,7 +82,6 @@
 
 
             <!-- DESKTOP NAV -->
-
             <div class="navlinks">
                 <a href="{{ url_for('main.home') }}" class="nav-link">Home</a>
                 <a href="{{ url_for('main.alumni') }}" class="nav-link">Alumni</a>
@@ -90,26 +89,41 @@
                 <a href="{{ url_for('main.memories') }}" class="nav-link">Memories</a>
                 <a href="{{ url_for('main.timeline') }}" class="nav-link">Timeline</a>
 
-                {% if current_user.is_authenticated %}
-                    <a class="nav-account nav-account-identity" href="{{ url_for('main.profile') }}" aria-label="Personal Capsule for {{ current_user.full_name }}">
-                        <span class="account-icon" aria-hidden="true">&#9673;</span>
-                        <span class="nav-account-copy"><strong>{{ current_user.full_name }}</strong><small>{{ 'ADMIN' if current_user.is_admin else 'ALUMNI' }}</small></span>
-                    </a>
-                    {% if current_user.is_admin %}
-                    <a href="{{ url_for('main.admin') }}" class="nav-link command-center-link">Command Center</a>
-                    {% endif %}
-                    <form class="nav-logout-form" method="post" action="{{ url_for('auth.logout') }}">
-                        <button type="submit" class="nav-link logout-link">Logout</button>
-                    </form>
-                {% else %}
-                    <a class="nav-account" href="{{ url_for('auth.login') }}">
-                        <span class="account-icon">&#9673;</span><span>Login</span>
-                    </a>
-                    <a href="{{ url_for('auth.register') }}" class="nav-link register-link">Register</a>
+                {% if not current_user.is_authenticated %}
+                <a class="nav-account" href="{{ url_for('auth.login') }}">
+                    <span class="account-icon" aria-hidden="true">&#9673;</span><span>Login</span>
+                </a>
+                <a href="{{ url_for('auth.register') }}" class="nav-link register-link">Register</a>
                 {% endif %}
             </div>
 
-                        <!-- MOBILE MENU BUTTON -->
+            {% if current_user.is_authenticated %}
+            <div class="account-menu" id="accountMenuRoot">
+                <button class="account-trigger" id="accountMenuTrigger" type="button"
+                        aria-expanded="false" aria-controls="accountMenu" aria-haspopup="true">
+                    <span class="account-trigger-name">{{ current_user.full_name }}</span>
+                    <small class="account-trigger-role">{{ 'ADMIN' if current_user.is_admin else 'ALUMNI' }}</small>
+                    <span class="account-trigger-chevron" aria-hidden="true">&#8964;</span>
+                </button>
+                <div class="account-dropdown" id="accountMenu" hidden>
+                    <div class="account-dropdown-identity">
+                        <strong>{{ current_user.full_name }}</strong>
+                        <span>{{ current_user.email }}</span>
+                    </div>
+                    <nav class="account-dropdown-links" aria-label="Account links">
+                        <a href="{{ url_for('main.profile') }}">Profile / Account</a>
+                        {% if current_user.is_admin %}
+                        <a class="account-admin-link" href="{{ url_for('main.admin') }}">Admin Panel</a>
+                        {% endif %}
+                    </nav>
+                    <form method="post" action="{{ url_for('auth.logout') }}" class="account-dropdown-logout-form">
+                        <button type="submit">Logout</button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- MOBILE MENU BUTTON -->
 
             <button
                 class="mobile-menu-button"
@@ -135,16 +149,7 @@
             <a href="{{ url_for('main.memories') }}">Memories</a>
             <a href="{{ url_for('main.timeline') }}">Timeline</a>
 
-            {% if current_user.is_authenticated %}
-                <a class="mobile-account-identity" href="{{ url_for('main.profile') }}">
-                    <span>{{ current_user.full_name }}</span>
-                    <small>{{ 'ADMIN' if current_user.is_admin else 'ALUMNI' }}</small>
-                </a>
-                {% if current_user.is_admin %}<a class="mobile-command-center" href="{{ url_for('main.admin') }}">Command Center</a>{% endif %}
-                <form class="mobile-logout-form" method="post" action="{{ url_for('auth.logout') }}">
-                    <button type="submit">Logout</button>
-                </form>
-            {% else %}
+            {% if not current_user.is_authenticated %}
                 <a href="{{ url_for('auth.login') }}">Login</a>
                 <a href="{{ url_for('auth.register') }}">Register</a>
             {% endif %}
@@ -1099,6 +1104,44 @@
 
     </script>
 
+    <script>
+    (function () {
+        const root = document.getElementById("accountMenuRoot");
+        const trigger = document.getElementById("accountMenuTrigger");
+        const menu = document.getElementById("accountMenu");
+        if (!root || !trigger || !menu) return;
+
+        function setOpen(open) {
+            trigger.setAttribute("aria-expanded", String(open));
+            menu.hidden = !open;
+        }
+
+        trigger.addEventListener("click", function () {
+            setOpen(menu.hidden);
+        });
+
+        document.addEventListener("pointerdown", function (event) {
+            if (!root.contains(event.target)) setOpen(false);
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape" && !menu.hidden) {
+                setOpen(false);
+                trigger.focus();
+            }
+        });
+
+        root.querySelectorAll("a, button[type='submit']").forEach(function (item) {
+            item.addEventListener("click", function () {
+                setOpen(false);
+            });
+        });
+
+        root.addEventListener("focusout", function (event) {
+            if (!root.contains(event.relatedTarget)) setOpen(false);
+        });
+    })();
+    </script>
 
     {% block scripts %}
     {% endblock %}
