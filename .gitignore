@@ -4,3 +4,6 @@ __pycache__/
 .env
 instance/*.db
 app/static/uploads/
+
+# Local Flask instance data
+instance/

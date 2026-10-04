@@ -1,4 +1,30 @@
 {% extends "base.html" %}
-{% block content %}<section class="section"><p class="eyebrow">MEMORY ARCHIVE</p><h1>Memory Wall</h1>
-<form class="search"><input name="q" value="{{ q }}" placeholder="Search memories..."><button class="button">Search</button></form>
-<div class="grid">{% for m in memories %}<article class="card"><div class="cardbody"><small>{{ m.year or "—" }} · {{ m.location or "Unknown place" }} · {{ m.category }}</small><h3>{{ m.title }}</h3><p>{{ m.description }}</p></div></article>{% else %}<div class="empty">No signal found.</div>{% endfor %}</div></section>{% endblock %}
+{% block title %}Memory Wall &middot; {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<section class="section memory-archive-page" aria-labelledby="memory-archive-title">
+<header class="memory-archive-heading"><p class="eyebrow">MEMORY ARCHIVE</p><h1 id="memory-archive-title">Memory Wall</h1><p>Moments from our alumni, gathered across the years.</p></header>
+<form class="search memory-archive-search" method="get" action="{{ url_for('main.memories') }}" role="search"><label class="visually-hidden" for="memory-search">Search memories</label><input id="memory-search" name="q" value="{{ q }}" placeholder="Search memories..." autocomplete="off"><button class="button" type="submit">Search</button></form>
+<div class="memory-grid memory-gallery-grid">
+{% for m in memories %}
+{% set memory_author = m.uploader.full_name if m.uploader else "Alumni" %}
+{% set memory_image_url = url_for('main.uploaded_file', filename=m.image) if m.image else "" %}
+<button class="memory-card memory-gallery-card memory-detail-trigger" type="button" data-title="{{ m.title }}" data-description="{{ m.description or '' }}" data-author="{{ memory_author }}" data-meta="{{ [m.year|string if m.year else '', m.location or '', m.category or 'Memory']|reject('equalto', '')|join(' · ') }}" data-image="{{ memory_image_url }}" aria-label="View memory: {{ m.title }}">
+<span class="memory-image">{% if m.image %}<img src="{{ memory_image_url }}" alt="{{ m.title }}" loading="lazy">{% else %}<span class="memory-placeholder" aria-hidden="true">&#10022;</span>{% endif %}<span class="memory-overlay" aria-hidden="true"></span><span class="memory-category">{{ m.category or "Memory" }}</span></span>
+<span class="memory-content"><span class="memory-meta">{{ memory_author }}{% if m.year %}<span aria-hidden="true"> · </span>{{ m.year }}{% endif %}{% if m.location %}<span aria-hidden="true"> · </span>{{ m.location }}{% endif %}</span><span class="memory-content-title">{{ m.title }}</span>{% if m.description %}<span class="memory-excerpt">{{ m.description|striptags|truncate(170, true, "...") }}</span>{% else %}<span class="memory-excerpt memory-excerpt-empty">A moment preserved in our alumni universe.</span>{% endif %}</span>
+</button>
+{% else %}<div class="empty memory-empty"><p class="eyebrow">NO SIGNAL FOUND</p><h2>No memories yet</h2><p>Try another search or check back as new memories are approved.</p></div>{% endfor %}
+</div></section>
+<div class="memory-detail-backdrop" id="memoryDetail" hidden><section class="memory-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="memoryDetailTitle" aria-describedby="memoryDetailDescription" tabindex="-1"><button class="memory-detail-close" type="button" aria-label="Close memory details">×</button><div class="memory-detail-visual" id="memoryDetailVisual" hidden><img id="memoryDetailImage" src="" alt=""></div><div class="memory-detail-copy"><p class="eyebrow" id="memoryDetailMeta"></p><h2 id="memoryDetailTitle"></h2><p class="memory-detail-author" id="memoryDetailAuthor"></p><p class="memory-detail-description" id="memoryDetailDescription"></p></div></section></div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+ const backdrop=document.getElementById("memoryDetail"); if(!backdrop)return;
+ const closeButton=backdrop.querySelector(".memory-detail-close"), imagePanel=document.getElementById("memoryDetailVisual"), image=document.getElementById("memoryDetailImage"), title=document.getElementById("memoryDetailTitle"), meta=document.getElementById("memoryDetailMeta"), author=document.getElementById("memoryDetailAuthor"), description=document.getElementById("memoryDetailDescription"); let opener=null;
+ function closeDetails(){if(backdrop.hidden)return;backdrop.hidden=true;document.body.classList.remove("memory-detail-open");if(opener)opener.focus();}
+ document.querySelectorAll(".memory-detail-trigger").forEach(function(card){card.addEventListener("click",function(){opener=card;title.textContent=card.dataset.title||"Memory";meta.textContent=card.dataset.meta||"Memory archive";author.textContent=card.dataset.author?"Shared by "+card.dataset.author:"";description.textContent=card.dataset.description||"A moment preserved in our alumni universe.";const src=card.dataset.image||"";image.src=src;image.alt=card.dataset.title||"Memory photo";imagePanel.hidden=!src;backdrop.hidden=false;document.body.classList.add("memory-detail-open");closeButton.focus();});});
+ closeButton.addEventListener("click",closeDetails); backdrop.addEventListener("click",function(event){if(event.target===backdrop)closeDetails();});
+ document.addEventListener("keydown",function(event){if(backdrop.hidden)return;if(event.key==="Escape"){event.preventDefault();closeDetails();}else if(event.key==="Tab"){event.preventDefault();closeButton.focus();}});
+})();
+</script>
+{% endblock %}

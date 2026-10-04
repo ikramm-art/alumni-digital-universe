@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Alumni Command Center · AlumniVerse{% endblock %}
+{% block title %}Alumni Command Center &middot; {{ SITE_NAME }}{% endblock %}
 {% block content %}
 <section class="command-center-page admin-foundation">
     <header class="command-center-heading">
-        <p class="eyebrow">ALUMNI DIGITAL UNIVERSE · ADMINISTRATION</p>
+        <p class="eyebrow">{{ SITE_NAME|upper }} · ADMINISTRATION</p>
         <h1>Alumni Command Center</h1>
         <p>Review community memories and manage the station from one protected space.</p>
         <a class="button" href="#memory-review">Review pending memories <span class="command-count">{{ pending_count }}</span></a>

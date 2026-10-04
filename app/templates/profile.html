@@ -1,52 +1,103 @@
 {% extends "base.html" %}
-{% block title %}{{ user.full_name }} · AlumniVerse{% endblock %}
+{% block title %}{{ user.full_name }} &middot; {{ SITE_NAME }}{% endblock %}
 {% block content %}
-<section class="profile-head">
-<div class="avatar huge">{% if user.profile_photo %}<img src="{{ url_for('main.uploaded_file', filename=user.profile_photo) }}" alt="{{ user.full_name }} profile photo">{% else %}{{ user.full_name[:1]|upper }}{% endif %}</div>
-<div><p class="eyebrow capsule-eyebrow">PERSONAL CAPSULE{% if not public %}<span class="capsule-role">{{ 'ADMIN' if current_user.is_admin else 'ALUMNI' }}</span>{% endif %}</p><h1>{{ user.full_name }}</h1><p>{{ user.bio or "Write your story here." }}</p></div>
+<main class="profile-page {{ 'profile-page-public' if public else 'profile-page-owner' }}">
+<section class="profile-head profile-showcase" aria-labelledby="profile-name">
+    <div class="profile-avatar-frame"><div class="avatar huge">
+        {% if user.profile_photo %}<img src="{{ url_for('main.uploaded_file', filename=user.profile_photo) }}" alt="{{ user.full_name }} profile photo">
+        {% else %}<span aria-hidden="true">{{ user.full_name[:1]|upper }}</span>{% endif %}
+    </div></div>
+    <div class="profile-identity">
+        <p class="eyebrow capsule-eyebrow">PERSONAL CAPSULE <span class="capsule-role">{{ 'ADMIN' if user.is_admin else 'ALUMNI' }}</span></p>
+        <h1 id="profile-name">{{ user.full_name }}</h1>
+        {% if user.bio %}<p class="profile-bio">{{ user.bio }}</p>{% else %}<p class="profile-bio profile-empty-copy">No about story has been added yet.</p>{% endif %}
+        {% if not public %}<a class="profile-email" href="mailto:{{ user.email }}">{{ user.email }}</a>{% endif %}
+    </div>
 </section>
 
-<section class="profile-grid">
-<div class="panel">
-<h2>Journey</h2>
-<p><b>Class:</b> {{ user.class_name or "—" }}</p><p><b>Generation:</b> {{ user.generation or "—" }}</p>
-<p><b>University:</b> {{ user.university or "—" }}</p><p><b>Major:</b> {{ user.major or "—" }}</p>
-<p><b>Occupation:</b> {{ user.occupation or "—" }}</p><p><b>City:</b> {{ user.city or "—" }}</p>
-</div>
+<section class="profile-main-grid" aria-label="Alumni profile details">
+<article class="panel profile-information">
+    <div class="profile-section-heading"><p class="eyebrow">IDENTITY & JOURNEY</p><h2>Alumni information</h2></div>
+    <dl class="profile-detail-list">
+        <div class="profile-detail-item"><dt>Class</dt><dd>{{ user.class_name or "Not added yet" }}</dd></div>
+        <div class="profile-detail-item"><dt>Generation</dt><dd>{{ user.generation or "Not added yet" }}</dd></div>
+        {% if user.entry_year %}<div class="profile-detail-item"><dt>Entry year</dt><dd>{{ user.entry_year }}</dd></div>{% endif %}
+        {% if user.graduation_year %}<div class="profile-detail-item"><dt>Graduation year</dt><dd>{{ user.graduation_year }}</dd></div>{% endif %}
+        <div class="profile-detail-item"><dt>University</dt><dd>{{ user.university or "Not added yet" }}</dd></div>
+        {% if user.major %}<div class="profile-detail-item"><dt>Major</dt><dd>{{ user.major }}</dd></div>{% endif %}
+        {% if user.university_year %}<div class="profile-detail-item"><dt>University year</dt><dd>{{ user.university_year }}</dd></div>{% endif %}
+        {% if user.occupation %}<div class="profile-detail-item"><dt>Occupation</dt><dd>{{ user.occupation }}</dd></div>{% endif %}
+        {% if user.city %}<div class="profile-detail-item"><dt>Location</dt><dd>{{ user.city }}</dd></div>{% endif %}
+    </dl>
+    {% if user.instagram or user.linkedin or user.github %}
+    <nav class="profile-social-links" aria-label="Social links">
+        {% if user.instagram %}{% set value=user.instagram.strip() %}{% set social_url=value if value.startswith('http://') or value.startswith('https://') else 'https://instagram.com/' ~ value.lstrip('@') %}<a href="{{ social_url }}" target="_blank" rel="noopener noreferrer">Instagram <span aria-hidden="true">↗</span></a>{% endif %}
+        {% if user.linkedin %}{% set value=user.linkedin.strip() %}{% set social_url=value if value.startswith('http://') or value.startswith('https://') else 'https://linkedin.com/in/' ~ value.lstrip('@') %}<a href="{{ social_url }}" target="_blank" rel="noopener noreferrer">LinkedIn <span aria-hidden="true">↗</span></a>{% endif %}
+        {% if user.github %}{% set value=user.github.strip() %}{% set social_url=value if value.startswith('http://') or value.startswith('https://') else 'https://github.com/' ~ value.lstrip('@') %}<a href="{{ social_url }}" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>{% endif %}
+    </nav>
+    {% else %}<p class="profile-empty-note">No social links have been added.</p>{% endif %}
+</article>
 
 {% if not public %}
-<div class="panel"><h2>Edit My Profile</h2>
-<form method="post" enctype="multipart/form-data">
-<input name="full_name" value="{{ user.full_name }}" placeholder="Nama">
-<input name="class_name" value="{{ user.class_name or '' }}" placeholder="Kelas">
-<input name="generation" value="{{ user.generation or '' }}" placeholder="Angkatan">
-<div class="two"><input name="entry_year" value="{{ user.entry_year or '' }}" placeholder="Tahun masuk"><input name="graduation_year" value="{{ user.graduation_year or '' }}" placeholder="Tahun lulus"></div>
-<textarea name="bio" placeholder="Bio / cerita singkat">{{ user.bio or '' }}</textarea>
-<input name="university" value="{{ user.university or '' }}" placeholder="Universitas">
-<input name="major" value="{{ user.major or '' }}" placeholder="Jurusan">
-<input name="university_year" value="{{ user.university_year or '' }}" placeholder="Tahun masuk universitas">
-<input name="occupation" value="{{ user.occupation or '' }}" placeholder="Pekerjaan / bidang">
-<input name="city" value="{{ user.city or '' }}" placeholder="Kota">
-<input name="profile_photo" type="file" accept="image/*">
-<div class="two"><input name="instagram" value="{{ user.instagram or '' }}" placeholder="Instagram"><input name="github" value="{{ user.github or '' }}" placeholder="GitHub"></div>
-<input name="linkedin" value="{{ user.linkedin or '' }}" placeholder="LinkedIn">
-<button class="button">Save Profile</button>
-</form></div>
-
-<div class="panel"><h2>⭐ Create Highlight</h2><p>Bikin sorotan seperti University, Achievement, Career, Journey, atau Favorite Memory.</p>
-<form method="post" action="{{ url_for('main.add_highlight') }}" enctype="multipart/form-data"><input name="title" placeholder="Judul sorotan" required><textarea name="description" placeholder="Ceritakan..."></textarea><input name="image" type="file" accept="image/*"><button class="button">Add Highlight</button></form>
-</div>
-
-<div class="panel"><h2>📸 Add Memory</h2>
-<form method="post" action="{{ url_for('main.add_memory') }}" enctype="multipart/form-data"><input name="title" placeholder="Judul kenangan" required><textarea name="description" placeholder="Cerita kenangan"></textarea><div class="two"><input name="year" placeholder="Tahun"><input name="location" placeholder="Lokasi"></div><select name="category"><option>School</option><option>Class</option><option>Event</option><option>Trip</option><option>Graduation</option><option>Reunion</option><option>Random</option><option>Other</option></select><input name="image" type="file" accept="image/*"><button class="button">Submit Memory</button></form></div>
+<details class="panel profile-edit-panel">
+    <summary><span><span class="eyebrow">YOUR ACCOUNT</span><strong>Edit profile</strong></span><span class="profile-edit-toggle" aria-hidden="true">+</span></summary>
+    <form class="profile-edit-form" method="post" action="{{ url_for('main.profile') }}" enctype="multipart/form-data">
+        <label for="profile-full-name">Full name</label><input id="profile-full-name" name="full_name" value="{{ user.full_name }}" maxlength="120" required>
+        <label for="profile-bio">About</label><textarea id="profile-bio" name="bio" maxlength="5000" rows="4" placeholder="Tell your alumni story">{{ user.bio or '' }}</textarea>
+        <div class="profile-form-two"><div><label for="profile-class">Class</label><input id="profile-class" name="class_name" value="{{ user.class_name or '' }}"></div><div><label for="profile-generation">Generation</label><input id="profile-generation" name="generation" value="{{ user.generation or '' }}"></div></div>
+        <div class="profile-form-two"><div><label for="profile-entry-year">Entry year</label><input id="profile-entry-year" name="entry_year" type="number" min="1900" max="2100" value="{{ user.entry_year or '' }}"></div><div><label for="profile-graduation-year">Graduation year</label><input id="profile-graduation-year" name="graduation_year" type="number" min="1900" max="2100" value="{{ user.graduation_year or '' }}"></div></div>
+        <label for="profile-university">University</label><input id="profile-university" name="university" value="{{ user.university or '' }}">
+        <label for="profile-major">Major</label><input id="profile-major" name="major" value="{{ user.major or '' }}">
+        <label for="profile-university-year">University year</label><input id="profile-university-year" name="university_year" type="number" min="1900" max="2100" value="{{ user.university_year or '' }}">
+        <div class="profile-form-two"><div><label for="profile-occupation">Occupation</label><input id="profile-occupation" name="occupation" value="{{ user.occupation or '' }}"></div><div><label for="profile-city">Location</label><input id="profile-city" name="city" value="{{ user.city or '' }}"></div></div>
+        <label for="profile-photo">Profile photo <span>PNG, JPG, or WebP</span></label><input id="profile-photo" name="profile_photo" type="file" accept="image/png,image/jpeg,image/webp">
+        <label for="profile-instagram">Instagram</label><input id="profile-instagram" name="instagram" value="{{ user.instagram or '' }}" placeholder="@username or profile URL">
+        <label for="profile-linkedin">LinkedIn</label><input id="profile-linkedin" name="linkedin" value="{{ user.linkedin or '' }}" placeholder="Profile URL or username">
+        <label for="profile-github">GitHub</label><input id="profile-github" name="github" value="{{ user.github or '' }}" placeholder="Profile URL or username">
+        <button class="button" type="submit">Save profile</button>
+    </form>
+</details>
+<article class="panel profile-contribution-panel">
+    <p class="eyebrow">ADD TO YOUR CAPSULE</p><h2>Create a highlight</h2><p>Save a milestone, achievement, career moment, or favorite memory.</p>
+    <form class="profile-contribution-form" method="post" action="{{ url_for('main.add_highlight') }}" enctype="multipart/form-data">
+        <label for="highlight-title">Title</label><input id="highlight-title" name="title" maxlength="120" required placeholder="Highlight title">
+        <label for="highlight-description">Description</label><textarea id="highlight-description" name="description" rows="3" placeholder="Add a few details"></textarea>
+        <label for="highlight-image">Photo <span>Optional · PNG, JPG, or WebP</span></label><input id="highlight-image" name="image" type="file" accept="image/png,image/jpeg,image/webp">
+        <button class="button" type="submit">Add highlight</button>
+    </form>
+</article>
+<article class="panel profile-contribution-panel">
+    <p class="eyebrow">SHARE WITH THE UNIVERSE</p><h2>Add a memory</h2><p>Your submission follows the existing review process before appearing publicly.</p>
+    <form class="profile-contribution-form" method="post" action="{{ url_for('main.add_memory') }}" enctype="multipart/form-data">
+        <label for="profile-memory-title">Title</label><input id="profile-memory-title" name="title" maxlength="160" required placeholder="Memory title">
+        <label for="profile-memory-description">Story</label><textarea id="profile-memory-description" name="description" maxlength="5000" rows="3" placeholder="What should the crew remember?"></textarea>
+        <div class="profile-form-two"><div><label for="profile-memory-year">Year</label><input id="profile-memory-year" name="year" type="number" min="1900" max="2100"></div><div><label for="profile-memory-location">Location</label><input id="profile-memory-location" name="location" maxlength="160"></div></div>
+        <label for="profile-memory-category">Category</label><select id="profile-memory-category" name="category">{% for category in ("School", "Class", "Event", "Trip", "Graduation", "Reunion", "Random", "Other") %}<option value="{{ category }}">{{ category }}</option>{% endfor %}</select>
+        <label for="profile-memory-image">Photo <span>Optional · PNG, JPG, or WebP</span></label><input id="profile-memory-image" name="image" type="file" accept="image/png,image/jpeg,image/webp">
+        <button class="button" type="submit">Submit for review</button>
+    </form>
+</article>
 {% endif %}
 </section>
 
-<section class="section"><h2>⭐ Highlights</h2><div class="grid">
-{% for h in user.highlights %}<article class="card"><div class="cardbody"><small>HIGHLIGHT</small><h3>{{ h.title }}</h3><p>{{ h.description }}</p></div></article>{% else %}<div class="empty">No highlights yet.</div>{% endfor %}
-</div></section>
+<section class="section profile-content-section" aria-labelledby="profile-highlights-title">
+    <div class="profile-section-heading"><p class="eyebrow">MILESTONES & MOMENTS</p><h2 id="profile-highlights-title">Highlights</h2></div>
+    {% if user.highlights %}<div class="grid profile-content-grid">
+        {% for h in user.highlights %}<article class="card profile-content-card">
+            {% if h.image %}<img class="profile-content-image" src="{{ url_for('main.uploaded_file', filename=h.image) }}" alt="{{ h.title }} highlight photo" loading="lazy">{% endif %}
+            <div class="cardbody"><small>HIGHLIGHT</small><h3>{{ h.title }}</h3>{% if h.description %}<p>{{ h.description }}</p>{% endif %}</div>
+        </article>{% endfor %}
+    </div>{% else %}<div class="empty profile-empty-state"><h3>No highlights yet</h3><p>{% if public %}This profile has no highlights to share yet.{% else %}Add a milestone or moment to make your capsule more personal.{% endif %}</p></div>{% endif %}
+</section>
 
-<section class="section"><h2>📸 Memories</h2><div class="grid">
-{% for m in memories %}<article class="card"><div class="cardbody"><small>{{ m.status|upper }} · {{ m.year or "—" }}</small><h3>{{ m.title }}</h3><p>{{ m.description }}</p></div></article>{% else %}<div class="empty">No memories yet.</div>{% endfor %}
-</div></section>
+<section class="section profile-content-section" aria-labelledby="profile-memories-title">
+    <div class="profile-section-heading"><p class="eyebrow">ARCHIVED STORIES</p><h2 id="profile-memories-title">Memories</h2></div>
+    {% if memories %}<div class="grid profile-content-grid">
+        {% for m in memories %}<article class="card profile-content-card">
+            {% if m.image %}<img class="profile-content-image" src="{{ url_for('main.uploaded_file', filename=m.image) }}" alt="{{ m.title }} memory photo" loading="lazy">{% endif %}
+            <div class="cardbody"><small>{% if not public %}{{ m.status|upper }} · {% endif %}{{ m.year or "MEMORY" }}{% if m.location %} · {{ m.location }}{% endif %}</small><h3>{{ m.title }}</h3>{% if m.description %}<p>{{ m.description|striptags|truncate(240, true, "...") }}</p>{% endif %}</div>
+        </article>{% endfor %}
+    </div>{% else %}<div class="empty profile-empty-state"><h3>No memories yet</h3><p>{% if public %}This profile has no approved memories to share yet.{% else %}Your approved and pending submissions will appear here.{% endif %}</p></div>{% endif %}
+</section>
+</main>
 {% endblock %}

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>{% block title %}Alumni Digital Universe{% endblock %}</title>
+    <title>{% block title %}{{ SITE_NAME }}{% endblock %}</title>
 
     <link
         rel="stylesheet"
@@ -76,18 +76,17 @@
                 href="{{ url_for('main.home') }}"
             >
                 <span class="brand-symbol">✦</span>
-                <span class="brand-main">ALUMNI</span>
-                <span class="brand-accent">VERSE</span>
+                <span class="brand-wordmark">{{ SITE_NAME }}</span>
             </a>
 
 
             <!-- DESKTOP NAV -->
             <div class="navlinks">
-                <a href="{{ url_for('main.home') }}" class="nav-link">Home</a>
-                <a href="{{ url_for('main.alumni') }}" class="nav-link">Alumni</a>
-                <a href="{{ url_for('main.galaxy') }}" class="nav-link">Galaxy</a>
-                <a href="{{ url_for('main.memories') }}" class="nav-link">Memories</a>
-                <a href="{{ url_for('main.timeline') }}" class="nav-link">Timeline</a>
+                <a href="{{ url_for('main.home') }}" class="nav-link">{{ NAV_HOME }}</a>
+                <a href="{{ url_for('main.alumni') }}" class="nav-link">{{ NAV_ALUMNI }}</a>
+                <a href="{{ url_for('main.galaxy') }}" class="nav-link">{{ NAV_GALAXY }}</a>
+                <a href="{{ url_for('main.memories') }}" class="nav-link">{{ NAV_MEMORIES }}</a>
+                <a href="{{ url_for('main.timeline') }}" class="nav-link">{{ NAV_TIMELINE }}</a>
 
                 {% if not current_user.is_authenticated %}
                 <a class="nav-account" href="{{ url_for('auth.login') }}">
@@ -143,11 +142,11 @@
         <!-- MOBILE NAV -->
 
         <div class="mobile-navigation" id="mobileNavigation">
-            <a href="{{ url_for('main.home') }}">Home</a>
-            <a href="{{ url_for('main.alumni') }}">Alumni</a>
-            <a href="{{ url_for('main.galaxy') }}">Galaxy</a>
-            <a href="{{ url_for('main.memories') }}">Memories</a>
-            <a href="{{ url_for('main.timeline') }}">Timeline</a>
+            <a href="{{ url_for('main.home') }}">{{ NAV_HOME }}</a>
+            <a href="{{ url_for('main.alumni') }}">{{ NAV_ALUMNI }}</a>
+            <a href="{{ url_for('main.galaxy') }}">{{ NAV_GALAXY }}</a>
+            <a href="{{ url_for('main.memories') }}">{{ NAV_MEMORIES }}</a>
+            <a href="{{ url_for('main.timeline') }}">{{ NAV_TIMELINE }}</a>
 
             {% if not current_user.is_authenticated %}
                 <a href="{{ url_for('auth.login') }}">Login</a>
@@ -203,18 +202,14 @@
 
                 <div class="footer-brand">
                     <span class="brand-symbol">✦</span>
-                    <span>ALUMNIVERSE</span>
+                    <span>{{ FOOTER_TEXT }}</span>
                 </div>
 
-                <p>
-                    Where memories become a universe.
-                </p>
+                <p>{{ SITE_TAGLINE }}</p>
 
             </div>
 
-            <span class="footer-copy">
-                © Alumni Digital Universe
-            </span>
+            <span class="footer-copy">&copy; {{ FOOTER_TEXT }}</span>
 
         </div>
 

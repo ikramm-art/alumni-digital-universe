@@ -4,6 +4,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 from . import db
 from .models import User
+from .site_config import SITE_NAME
 
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
@@ -76,7 +77,7 @@ def register():
             return redirect(url_for("auth.register"))
 
         login_user(user)
-        flash("Your account is ready. Welcome to the Alumni Universe.", "success")
+        flash(f"Your account is ready. Welcome to {SITE_NAME}.", "success")
         return _profile_redirect()
 
     return render_template("auth/register.html")

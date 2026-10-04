@@ -5,6 +5,7 @@ import click
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect
+from . import site_config
 
 
 db = SQLAlchemy()
@@ -54,6 +55,19 @@ def create_app():
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
+
+    @app.context_processor
+    def inject_site_branding():
+        return {
+            "SITE_NAME": site_config.SITE_NAME,
+            "SITE_TAGLINE": site_config.SITE_TAGLINE,
+            "NAV_HOME": site_config.NAV_HOME,
+            "NAV_ALUMNI": site_config.NAV_ALUMNI,
+            "NAV_GALAXY": site_config.NAV_GALAXY,
+            "NAV_MEMORIES": site_config.NAV_MEMORIES,
+            "NAV_TIMELINE": site_config.NAV_TIMELINE,
+            "FOOTER_TEXT": site_config.FOOTER_TEXT,
+        }
 
     @app.cli.command("promote-admin")
     @click.argument("email")

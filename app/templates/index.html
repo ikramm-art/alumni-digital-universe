@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}Home — Alumni Digital Universe{% endblock %}
+{% block title %}{{ NAV_HOME }} &mdash; {{ SITE_NAME }}{% endblock %}
 
 {% block content %}
 <section class="hero home-hero">
     <div class="hero-orbit orbit-one" aria-hidden="true"></div>
     <div class="hero-orbit orbit-two" aria-hidden="true"></div>
     <div class="hero-content reveal">
-        <p class="eyebrow">✦ Alumni Digital Universe</p>
-        <h1>Where Memories<br><span>Become a Universe.</span></h1>
+        <p class="eyebrow"><span aria-hidden="true">&#10022;</span> {{ SITE_NAME }}</p>
+        {% set tagline_words = SITE_TAGLINE.rsplit(' ', 2) %}
+        <h1>{{ tagline_words[0] }}<br><span>{{ tagline_words[1:]|join(' ') }}</span></h1>
         <p class="lead">One generation. Countless memories. A digital space for everyone who shared the same journey.</p>
         <div class="actions">
             <a class="button" href="{{ url_for('main.memories') }}">Explore Memories <span aria-hidden="true">→</span></a>
