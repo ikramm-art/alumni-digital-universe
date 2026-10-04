@@ -3,20 +3,91 @@
 {% block content %}
 <section class="section memory-archive-page" aria-labelledby="memory-archive-title">
 <header class="memory-archive-heading"><p class="eyebrow">MEMORY ARCHIVE</p><h1 id="memory-archive-title">Memory Wall</h1><p>Moments from our alumni, gathered across the years.</p></header>
-<form class="search memory-archive-search" method="get" action="{{ url_for('main.memories') }}" role="search"><label class="visually-hidden" for="memory-search">Search memories</label><input id="memory-search" name="q" value="{{ q }}" placeholder="Search memories..." autocomplete="off"><button class="button" type="submit">Search</button></form>
+<div class="memory-browser-controls">
+<form class="search memory-archive-search" id="memorySearchForm" method="get" action="{{ url_for('main.memories') }}" role="search"><label class="visually-hidden" for="memory-search">Search memories</label><input id="memory-search" name="q" value="{{ q }}" placeholder="Search title, story, or alumni..." autocomplete="off"><button class="button" type="submit">Search</button></form>
+<label class="memory-sort-control" for="memorySort"><span>Sort memories</span><select id="memorySort" name="sort"><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="az">A–Z</option></select></label>
+<p class="memory-result-count" id="memoryResultCount" role="status" aria-live="polite">{{ memories|length }} memories in the archive</p>
+</div>
 <div class="memory-grid memory-gallery-grid">
 {% for m in memories %}
 {% set memory_author = m.uploader.full_name if m.uploader else "Alumni" %}
 {% set memory_image_url = url_for('main.uploaded_file', filename=m.image) if m.image else "" %}
-<button class="memory-card memory-gallery-card memory-detail-trigger" type="button" data-title="{{ m.title }}" data-description="{{ m.description or '' }}" data-author="{{ memory_author }}" data-meta="{{ [m.year|string if m.year else '', m.location or '', m.category or 'Memory']|reject('equalto', '')|join(' · ') }}" data-image="{{ memory_image_url }}" aria-label="View memory: {{ m.title }}">
+<button class="memory-card memory-gallery-card memory-detail-trigger" type="button" data-title="{{ m.title }}" data-search-title="{{ m.title|lower }}" data-search-description="{{ (m.description or '')|striptags|lower }}" data-search-author="{{ memory_author|lower }}" data-created-at="{{ m.created_at.isoformat() if m.created_at else '' }}" data-description="{{ m.description or '' }}" data-author="{{ memory_author }}" data-meta="{{ [m.year|string if m.year else '', m.location or '', m.category or 'Memory']|reject('equalto', '')|join(' · ') }}" data-image="{{ memory_image_url }}" aria-label="View memory: {{ m.title }}">
 <span class="memory-image">{% if m.image %}<img src="{{ memory_image_url }}" alt="{{ m.title }}" loading="lazy">{% else %}<span class="memory-placeholder" aria-hidden="true">&#10022;</span>{% endif %}<span class="memory-overlay" aria-hidden="true"></span><span class="memory-category">{{ m.category or "Memory" }}</span></span>
 <span class="memory-content"><span class="memory-meta">{{ memory_author }}{% if m.year %}<span aria-hidden="true"> · </span>{{ m.year }}{% endif %}{% if m.location %}<span aria-hidden="true"> · </span>{{ m.location }}{% endif %}</span><span class="memory-content-title">{{ m.title }}</span>{% if m.description %}<span class="memory-excerpt">{{ m.description|striptags|truncate(170, true, "...") }}</span>{% else %}<span class="memory-excerpt memory-excerpt-empty">A moment preserved in our alumni universe.</span>{% endif %}</span>
 </button>
-{% else %}<div class="empty memory-empty"><p class="eyebrow">NO SIGNAL FOUND</p><h2>No memories yet</h2><p>Try another search or check back as new memories are approved.</p></div>{% endfor %}
+{% else %}<div class="empty memory-empty" id="memoryCollectionEmpty"><p class="eyebrow">NO SIGNAL FOUND</p><h2>{% if q %}No memories match this search{% else %}No memories yet{% endif %}</h2><p>{% if q %}Try another title, story, or place.{% else %}Approved memories shared by the alumni community will appear here.{% endif %}</p></div>{% endfor %}
+<div class="empty memory-search-empty" id="memorySearchEmpty" role="status" aria-live="polite" hidden><p class="eyebrow">ARCHIVE SEARCH</p><h2>No memories found</h2><p>Try a different title, story detail, or alumni name.</p></div>
 </div></section>
+<section class="section memory-contribution-cta" aria-labelledby="memory-contribution-title"><div><p class="eyebrow">KEEP THE MOMENTS CLOSE</p><h2 id="memory-contribution-title">Every memory belongs in the archive.</h2><p>Share a moment from your journey with the alumni community.</p></div><div class="memory-contribution-actions">{% if current_user.is_authenticated %}<a class="button" href="{{ url_for('main.add_memory') }}">Preserve a Memory</a>{% else %}<a class="button" href="{{ url_for('auth.login') }}">Login to contribute</a><a class="button ghost" href="{{ url_for('auth.register') }}">Create an account</a>{% endif %}</div></section>
 <div class="memory-detail-backdrop" id="memoryDetail" hidden><section class="memory-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="memoryDetailTitle" aria-describedby="memoryDetailDescription" tabindex="-1"><button class="memory-detail-close" type="button" aria-label="Close memory details">×</button><div class="memory-detail-visual" id="memoryDetailVisual" hidden><img id="memoryDetailImage" src="" alt=""></div><div class="memory-detail-copy"><p class="eyebrow" id="memoryDetailMeta"></p><h2 id="memoryDetailTitle"></h2><p class="memory-detail-author" id="memoryDetailAuthor"></p><p class="memory-detail-description" id="memoryDetailDescription"></p></div></section></div>
 {% endblock %}
 {% block scripts %}
+
+<script>
+(function () {
+    const form = document.getElementById("memorySearchForm");
+    const input = document.getElementById("memory-search");
+    const sortControl = document.getElementById("memorySort");
+    const grid = document.querySelector(".memory-gallery-grid");
+    const emptyState = document.getElementById("memorySearchEmpty");
+    const resultCount = document.getElementById("memoryResultCount");
+    if (!form || !input || !sortControl || !grid || !emptyState || !resultCount) return;
+
+    const cards = Array.from(grid.querySelectorAll(".memory-gallery-card"));
+    const originalOrder = new Map(cards.map(function (card, index) { return [card, index]; }));
+
+    function sortCards() {
+        const mode = sortControl.value;
+        cards.sort(function (a, b) {
+            if (mode === "az") {
+                return (a.dataset.searchTitle || "").localeCompare(b.dataset.searchTitle || "", undefined, { sensitivity: "base" });
+            }
+            const aTime = Date.parse(a.dataset.createdAt || "");
+            const bTime = Date.parse(b.dataset.createdAt || "");
+            if (!Number.isFinite(aTime) && !Number.isFinite(bTime)) return originalOrder.get(a) - originalOrder.get(b);
+            if (!Number.isFinite(aTime)) return 1;
+            if (!Number.isFinite(bTime)) return -1;
+            if (aTime === bTime) return originalOrder.get(a) - originalOrder.get(b);
+            return mode === "oldest" ? aTime - bTime : bTime - aTime;
+        });
+        cards.forEach(function (card) { grid.insertBefore(card, emptyState); });
+    }
+
+    function filterCards() {
+        const query = input.value.trim().toLocaleLowerCase();
+        let visibleCount = 0;
+        cards.forEach(function (card) {
+            const searchable = [
+                card.dataset.searchTitle,
+                card.dataset.searchDescription,
+                card.dataset.searchAuthor
+            ].join(" ").toLocaleLowerCase();
+            const matches = !query || searchable.includes(query);
+            card.classList.toggle("is-filtered-out", !matches);
+            if (matches) visibleCount += 1;
+        });
+        emptyState.hidden = cards.length === 0 || visibleCount !== 0;
+        resultCount.textContent = cards.length === 0
+            ? "No approved memories in the archive"
+            : "Showing " + visibleCount + " of " + cards.length + " memories";
+    }
+
+    input.addEventListener("input", filterCards);
+    sortControl.addEventListener("change", function () {
+        sortCards();
+        filterCards();
+    });
+    form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        filterCards();
+    });
+
+    sortCards();
+    filterCards();
+})();
+</script>
+
 <script>
 (function () {
  const backdrop=document.getElementById("memoryDetail"); if(!backdrop)return;

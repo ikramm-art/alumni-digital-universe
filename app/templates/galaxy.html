@@ -1,3 +1,617 @@
 {% extends "base.html" %}
-{% block content %}<section class="section galaxy"><p class="eyebrow">ALUMNI GALAXY</p><h1>Our Stars</h1><p>Every alumni is a star in the same constellation.</p>
-<div class="starfield">{% for a in alumni %}<a class="star" href="{{ url_for('main.profile_public', user_id=a.id) }}" style="--x: {{ (a.id * 37) % 90 + 5 }}%; --y: {{ (a.id * 61) % 75 + 10 }}%"><span>✦</span><b>{{ a.full_name }}</b></a>{% endfor %}</div></section>{% endblock %}
+
+{% block title %}Alumni Galaxy · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<section class="section galaxy galaxy-page" id="galaxyPage" aria-labelledby="galaxy-title">
+    <header class="galaxy-heading">
+        <p class="eyebrow">ALUMNI UNIVERSE · CONSTELLATION ARCHIVE</p>
+        <h1 id="galaxy-title">Many orbits. <span>One universe.</span></h1>
+        <p class="galaxy-intro">Explore the eras and people that make up our shared alumni universe.</p>
+    </header>
+
+    <section class="galaxy-explorer" aria-label="Alumni universe explorer">
+        {% if alumni %}
+        <div class="galaxy-controls">
+            <label for="galaxySearch">Find an alum</label>
+            <div class="galaxy-search-wrap">
+                <span aria-hidden="true">⌕</span>
+                <input id="galaxySearch" type="search" placeholder="Search alumni by full name" autocomplete="off" aria-controls="universeOverview galaxyDetail">
+            </div>
+            <p class="galaxy-result-count" id="galaxyResultCount" aria-live="polite">{{ alumni|length }} alumni across the universe</p>
+        </div>
+        <p class="galaxy-search-guidance" id="galaxySearchGuidance" aria-live="polite"></p>
+
+        <div class="universe-overview" id="universeOverview" aria-label="Universe overview">
+            <div class="universe-coordinate universe-coordinate-one" aria-hidden="true">A SHARED UNIVERSE</div>
+            <div class="universe-coordinate universe-coordinate-two" aria-hidden="true">ALUMNI CONSTELLATION ARCHIVE</div>
+            <div class="universe-nebula universe-nebula-one" aria-hidden="true"></div>
+            <div class="universe-nebula universe-nebula-two" aria-hidden="true"></div>
+            <div class="universe-dust" aria-hidden="true"></div>
+            <div class="universe-systems" id="universeSystems" aria-label="Galaxies"></div>
+        </div>
+
+        <section class="galaxy-detail-view" id="galaxyDetail" aria-labelledby="activeGalaxyName" hidden>
+            <div class="galaxy-detail-heading">
+                <button class="galaxy-back-button" id="galaxyBackButton" type="button"><span aria-hidden="true">←</span> Universe overview</button>
+                <div>
+                    <p class="eyebrow" id="activeGalaxyEra"></p>
+                    <h2 id="activeGalaxyName"></h2>
+                </div>
+                <p class="galaxy-detail-count" id="activeGalaxyCount"></p>
+            </div>
+            <p class="galaxy-detail-search-note" id="galaxyDetailSearchNote" aria-live="polite"></p>
+            <div class="galaxy-detail-layout">
+                <div class="starfield" id="galaxyStarfield" aria-label="Alumni stars in this galaxy">
+                    <div class="galaxy-orbit-paths" id="galaxyOrbitPaths" aria-hidden="true"></div>
+                    <div class="galaxy-core" aria-hidden="true"><span>✦</span></div>
+                    <div class="galaxy-stars" id="galaxyStars"></div>
+                </div>
+                <aside class="galaxy-info-panel" id="galaxyInfoPanel" aria-labelledby="galaxyInfoName" aria-live="polite" hidden>
+                    <button class="galaxy-info-close" id="galaxyInfoClose" type="button" aria-label="Close alumni information">×</button>
+                    <div class="galaxy-info-photo" id="galaxyInfoPhotoWrap" hidden><img id="galaxyInfoPhoto" alt=""></div>
+                    <p class="eyebrow">ALUMNI SIGNAL</p>
+                    <h3 id="galaxyInfoName"></h3>
+                    <div class="galaxy-info-details" id="galaxyInfoDetails"></div>
+                    <p class="galaxy-info-bio" id="galaxyInfoBio" hidden></p>
+                    <a class="button galaxy-profile-link" id="galaxyProfileLink" href="#">View public profile <span aria-hidden="true">→</span></a>
+                </aside>
+            </div>
+            <div class="galaxy-no-results" id="galaxyNoResults" role="status" aria-live="polite" hidden>
+                <span aria-hidden="true">✦</span><h3>No matching alumni in this galaxy</h3><p>Try another name or visit a highlighted galaxy in the overview.</p>
+            </div>
+            <button class="galaxy-jump-button" id="galaxySearchJump" type="button" hidden></button>
+        </section>
+
+        <div class="galaxy-search-empty" id="galaxySearchEmpty" role="status" aria-live="polite" hidden>
+            <span aria-hidden="true">✦</span><h2>No matching alumni found</h2><p>Try another name to find their place in the universe.</p>
+        </div>
+
+        <div class="galaxy-records" id="galaxyRecords" hidden aria-hidden="true">
+            {% for a in alumni %}
+            <span class="galaxy-record"
+                  data-id="{{ a.id }}"
+                  data-name="{{ a.full_name }}"
+                  data-generation="{{ a.generation or '' }}"
+                  data-entry-year="{{ a.entry_year or '' }}"
+                  data-class="{{ a.class_name or '' }}"
+                  data-university="{{ a.university or '' }}"
+                  data-major="{{ a.major or '' }}"
+                  data-occupation="{{ a.occupation or '' }}"
+                  data-city="{{ a.city or '' }}"
+                  data-bio="{{ (a.bio or '')|striptags|truncate(280, true, '...') }}"
+                  data-photo="{% if a.profile_photo %}{{ url_for('main.uploaded_file', filename=a.profile_photo) }}{% endif %}"
+                  data-profile="{{ url_for('main.profile_public', user_id=a.id) }}"></span>
+            {% endfor %}
+        </div>
+        <noscript><p class="galaxy-empty-state">Enable JavaScript to explore the interactive alumni universe.</p></noscript>
+        {% else %}
+        <div class="galaxy-empty-state"><span aria-hidden="true">✦</span><h2>The universe is waiting</h2><p>Alumni stars will appear here as the community grows.</p></div>
+        {% endif %}
+    </section>
+</section>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>(function () {
+    "use strict";
+    const page = document.getElementById("galaxyPage");
+    if (!page) return;
+
+    // EDIT GALAXY NAMES / ERA LABELS HERE. These are display labels, not alumni data.
+    const GALAXIES = [
+        { id: "galaxy-alpha", name: "Galaxy Alpha", eraLabel: "" },
+        { id: "galaxy-nova", name: "Galaxy Nova", eraLabel: "" },
+        { id: "galaxy-orion", name: "Galaxy Orion", eraLabel: "" },
+        { id: "galaxy-zenith", name: "Galaxy Zenith", eraLabel: "" },
+        { id: "galaxy-fifth", name: "Galaxy Fifth", eraLabel: "" },
+        { id: "galaxy-sixth", name: "Galaxy Sixth", eraLabel: "" },
+        { id: "galaxy-seventh", name: "Galaxy Seventh", eraLabel: "" },
+        { id: "galaxy-eighth", name: "Galaxy Eighth", eraLabel: "" }
+    ];
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    const TAU = Math.PI * 2;
+    const records = Array.from(page.querySelectorAll(".galaxy-record")).map(function (node) {
+        return Object.assign({}, node.dataset, { entryYearNumber: Number(node.dataset.entryYear) || null });
+    });
+    if (!records.length) return;
+
+    const search = document.getElementById("galaxySearch");
+    const count = document.getElementById("galaxyResultCount");
+    const guidance = document.getElementById("galaxySearchGuidance");
+    const overview = document.getElementById("universeOverview");
+    const systemsHost = document.getElementById("universeSystems");
+    const detail = document.getElementById("galaxyDetail");
+    const backButton = document.getElementById("galaxyBackButton");
+    const activeName = document.getElementById("activeGalaxyName");
+    const activeEra = document.getElementById("activeGalaxyEra");
+    const activeCount = document.getElementById("activeGalaxyCount");
+    const detailNote = document.getElementById("galaxyDetailSearchNote");
+    const starfield = document.getElementById("galaxyStarfield");
+    const starsHost = document.getElementById("galaxyStars");
+    const orbitPathsHost = document.getElementById("galaxyOrbitPaths");
+    const core = starfield.querySelector(".galaxy-core");
+    const panel = document.getElementById("galaxyInfoPanel");
+    const closeButton = document.getElementById("galaxyInfoClose");
+    const noResults = document.getElementById("galaxyNoResults");
+    const globalEmpty = document.getElementById("galaxySearchEmpty");
+    const jumpButton = document.getElementById("galaxySearchJump");
+    const name = document.getElementById("galaxyInfoName");
+    const details = document.getElementById("galaxyInfoDetails");
+    const bio = document.getElementById("galaxyInfoBio");
+    const photoWrap = document.getElementById("galaxyInfoPhotoWrap");
+    const photo = document.getElementById("galaxyInfoPhoto");
+    const profileLink = document.getElementById("galaxyProfileLink");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const canParallax = !reducedMotion && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    const overviewMobileQuery = window.matchMedia("(max-width: 700px)");
+    let compactOrbit = window.matchMedia("(max-width: 900px)").matches;
+    let groups = [];
+    let systems = [];
+    let activeGroup = null;
+    let activeOrbitState = null;
+    let activeStar = null;
+    let currentQuery = "";
+    let focusGalaxyButton = null;
+    let transitionTimer = null;
+    let animationFrameId = null;
+    let animationEpoch = performance.now();
+    let pointerX = 0;
+    let pointerY = 0;
+
+    function stableHash(value) {
+        const text = String(value || "");
+        let hash = 2166136261;
+        for (let index = 0; index < text.length; index += 1) {
+            hash ^= text.charCodeAt(index);
+            hash = Math.imul(hash, 16777619);
+        }
+        return hash >>> 0;
+    }
+
+    function buildGroups() {
+        const byKey = new Map();
+        records.forEach(function (record) {
+            const generation = (record.generation || "").trim();
+            let key;
+            let era;
+            let yearOrder = record.entryYearNumber || Number.MAX_SAFE_INTEGER;
+            if (generation) {
+                key = "generation:" + generation.toLocaleLowerCase();
+                era = "Generation " + generation;
+            } else if (record.entryYearNumber) {
+                const start = Math.floor(record.entryYearNumber / 5) * 5;
+                key = "entry-years:" + start;
+                era = "Entry years " + start + "\u2013" + (start + 4);
+                yearOrder = start;
+            } else {
+                key = "unmapped";
+                era = "Generation or entry year not set";
+            }
+            if (!byKey.has(key)) byKey.set(key, { key: key, era: era, yearOrder: yearOrder, records: [] });
+            const group = byKey.get(key);
+            group.records.push(record);
+            if (record.entryYearNumber) group.yearOrder = Math.min(group.yearOrder, record.entryYearNumber);
+        });
+        return Array.from(byKey.values()).sort(function (left, right) {
+            if (left.yearOrder !== right.yearOrder) return left.yearOrder - right.yearOrder;
+            return left.key.localeCompare(right.key, undefined, { numeric: true, sensitivity: "base" });
+        }).map(function (group, index) {
+            const label = GALAXIES[index] || { id: "galaxy-" + (index + 1), name: "Galaxy " + (index + 1), eraLabel: "" };
+            return Object.assign(group, { id: label.id, name: label.name, displayEra: label.eraLabel || group.era, matches: group.records.slice() });
+        });
+    }
+
+    function createElement(tag, className, text) {
+        const element = document.createElement(tag);
+        if (className) element.className = className;
+        if (text !== undefined) element.textContent = text;
+        return element;
+    }
+
+    function createSvg(className, width, height) {
+        const svg = document.createElementNS(SVG_NS, "svg");
+        svg.setAttribute("class", className);
+        svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+        svg.setAttribute("width", String(width));
+        svg.setAttribute("height", String(height));
+        svg.setAttribute("preserveAspectRatio", "none");
+        svg.setAttribute("aria-hidden", "true");
+        return svg;
+    }
+
+    function addOrbitEllipse(svg, orbit, orbitIndex) {
+        const ellipse = document.createElementNS(SVG_NS, "ellipse");
+        ellipse.setAttribute("cx", String(orbit.centerX));
+        ellipse.setAttribute("cy", String(orbit.centerY));
+        ellipse.setAttribute("rx", String(orbit.radiusX));
+        ellipse.setAttribute("ry", String(orbit.radiusY));
+        ellipse.setAttribute("transform", "rotate(" + (orbit.tilt * 180 / Math.PI) + " " + orbit.centerX + " " + orbit.centerY + ")");
+        if (orbitIndex !== undefined) ellipse.setAttribute("data-orbit-index", String(orbitIndex));
+        svg.appendChild(ellipse);
+        return ellipse;
+    }
+
+    function calculatePosition(orbit, elapsed) {
+        const angle = orbit.phase + elapsed * orbit.angularSpeed * orbit.direction;
+        const localX = orbit.radiusX * Math.cos(angle);
+        const localY = orbit.radiusY * Math.sin(angle);
+        const cosine = Math.cos(orbit.tilt);
+        const sine = Math.sin(orbit.tilt);
+        return {
+            x: orbit.centerX + localX * cosine - localY * sine,
+            y: orbit.centerY + localX * sine + localY * cosine
+        };
+    }
+
+    function setNodePosition(node, point) {
+        node.style.transform = "translate3d(" + point.x.toFixed(2) + "px," + point.y.toFixed(2) + "px,0) translate(-50%,-50%)";
+    }
+
+    function createSystem(group, index) {
+        const button = createElement("button", "galaxy-system");
+        button.type = "button";
+        button.dataset.galaxyId = group.id;
+        button.setAttribute("aria-pressed", "false");
+        button.setAttribute("aria-label", group.name + ", " + group.displayEra + ", " + group.records.length + " alumni. Open galaxy.");
+        const locations = [[22,31],[74,28],[50,61],[84,69],[18,76],[49,22],[69,78],[33,52]];
+        const point = locations[index] || [12 + ((index * 31) % 76),18 + ((index * 47) % 66)];
+        button.style.setProperty("--system-x", point[0] + "%");
+        button.style.setProperty("--system-y", point[1] + "%");
+
+        const orbitsSvg = createSvg("galaxy-system-orbit-svg", 100, 100);
+        const miniStars = createElement("span", "galaxy-system-stars");
+        miniStars.setAttribute("aria-hidden", "true");
+        const coreNode = createElement("span", "galaxy-system-core", "\u2726");
+        coreNode.setAttribute("aria-hidden", "true");
+        const label = createElement("span", "galaxy-system-label");
+        label.appendChild(createElement("strong", "", group.name));
+        label.appendChild(createElement("small", "", group.displayEra));
+        label.appendChild(createElement("small", "galaxy-system-count", group.records.length + (group.records.length === 1 ? " alum" : " alumni")));
+        button.append(orbitsSvg, miniStars, coreNode, label);
+        const state = {
+            group: group, button: button, orbitsSvg: orbitsSvg, miniStars: miniStars,
+            baseX: point[0], baseY: point[1], width: 0, height: 0,
+            driftX: 0, driftY: 0, phase: (stableHash(group.id) % 6283) / 1000,
+            angularSpeed: 0.055 + (index % 5) * 0.008, miniOrbits: []
+        };
+        button.addEventListener("click", function () { openGalaxy(group, button); });
+        systemsHost.appendChild(button);
+        group.button = button;
+        systems.push(state);
+        rebuildSystemGeometry(state);
+    }
+
+    function rebuildSystemGeometry(state) {
+        const rect = state.button.getBoundingClientRect();
+        state.width = rect.width || state.button.offsetWidth || 180;
+        state.height = rect.height || state.button.offsetHeight || 160;
+        state.driftX = Math.min(14, state.width * 0.07);
+        state.driftY = Math.min(11, state.height * 0.065);
+        const centerX = state.width / 2;
+        const centerY = state.height / 2;
+        const laneDefs = [
+            { x: 0.34, y: 0.17, tilt: -31 },
+            { x: 0.27, y: 0.21, tilt: 37 },
+            { x: 0.20, y: 0.25, tilt: -14 }
+        ];
+        state.orbitsSvg.setAttribute("viewBox", "0 0 " + state.width + " " + state.height);
+        state.orbitsSvg.replaceChildren();
+        const lanes = laneDefs.map(function (item) {
+            const orbit = { centerX:centerX, centerY:centerY, radiusX:state.width*item.x, radiusY:state.height*item.y, tiltDegrees:item.tilt, tilt:item.tilt*Math.PI/180 };
+            addOrbitEllipse(state.orbitsSvg, orbit);
+            return orbit;
+        });
+        state.miniStars.replaceChildren();
+        state.miniOrbits = state.group.records.slice(0, 7).map(function (record, starIndex) {
+            const laneIndex = starIndex % lanes.length;
+            const lane = lanes[laneIndex];
+            const seed = stableHash(record.id || starIndex + 1);
+            const phase = ((starIndex / Math.max(1, Math.min(state.group.records.length, 7))) * TAU + (seed % 251) / 251 * 0.16) % TAU;
+            const duration = 26 + seed % 17;
+            const orbit = Object.assign({}, lane, {
+                phase:phase, angularSpeed:TAU/duration, direction:seed%2 ? 1 : -1,
+                element:createElement("i", "galaxy-system-star galaxy-system-star-" + starIndex, "\u2726")
+            });
+            state.miniStars.appendChild(orbit.element);
+            return orbit;
+        });
+    }
+
+    function makeStar(record, index, orbit) {
+        const button = createElement("button", "star");
+        button.type = "button";
+        button.dataset.id = record.id || "";
+        button.dataset.orbitIndex = String(index);
+        button.dataset.name = record.name || "";
+        button.dataset.generation = record.generation || "";
+        button.dataset.class = record.class || "";
+        button.dataset.university = record.university || "";
+        button.dataset.major = record.major || "";
+        button.dataset.occupation = record.occupation || "";
+        button.dataset.city = record.city || "";
+        button.dataset.bio = record.bio || "";
+        button.dataset.photo = record.photo || "";
+        button.dataset.profile = record.profile || "#";
+        button.setAttribute("aria-label", "Explore " + button.dataset.name);
+        button.setAttribute("aria-pressed", "false");
+        const face = createElement("span", "star-face");
+        face.append(createElement("span", "star-point", "\u2726"), createElement("span", "star-label", button.dataset.name));
+        face.firstChild.setAttribute("aria-hidden", "true");
+        button.appendChild(face);
+        button.addEventListener("click", function () { showPanel(button); });
+        orbit.element = button;
+        orbit.recordIndex = index;
+        starsHost.appendChild(button);
+        return button;
+    }
+
+    function createDetailOrbit(record, index, count, width, height, centerX, centerY) {
+        const seed = stableHash(record.id || index + 1);
+        const rank = (index + 1) / (count + 1);
+        const radiusX = width * (compactOrbit ? 0.14 + rank * 0.20 : 0.16 + rank * 0.22);
+        const radiusY = height * (compactOrbit ? 0.09 + rank * 0.15 : 0.105 + rank * 0.16);
+        const phaseJitter = (seed % 997) / 997 * (TAU / Math.max(1, count * 100));
+        const phase = ((index / count) * TAU + phaseJitter) % TAU;
+        const tiltDegrees = count === 1 ? (seed % 61) - 30 : -36 + (72 * index / (count - 1));
+        const duration = 56 + index * 0.73 + (seed % 17) * 0.001;
+        return {
+            centerX:centerX,
+            centerY:centerY,
+            radiusX:Math.max(1, radiusX),
+            radiusY:Math.max(1, radiusY),
+            tiltDegrees:tiltDegrees,
+            tilt:tiltDegrees * Math.PI / 180,
+            phase:phase,
+            angularSpeed:TAU / duration,
+            direction:index % 2 === 0 ? 1 : -1,
+            recordIndex:index,
+            element:null
+        };
+    }
+
+    function renderConstellation(group) {
+        starsHost.replaceChildren();
+        orbitPathsHost.replaceChildren();
+        const rect = starfield.getBoundingClientRect();
+        const width = Math.max(1, rect.width);
+        const height = Math.max(1, rect.height);
+        const centerX = width / 2;
+        const centerY = height / 2;
+        core.style.transform = "translate3d(" + centerX + "px," + centerY + "px,0) translate(-50%,-50%)";
+        const svg = createSvg("galaxy-orbit-svg", width, height);
+        const orbits = [];
+        group.records.forEach(function (record, index) {
+            const orbit = createDetailOrbit(record, index, group.records.length, width, height, centerX, centerY);
+            addOrbitEllipse(svg, orbit, index);
+            makeStar(record, index, orbit);
+            orbits.push(orbit);
+        });
+        orbitPathsHost.appendChild(svg);
+        activeOrbitState = { centerX:centerX, centerY:centerY, width:width, height:height, orbits:orbits, svg:svg };
+        updateDetailOrbits(activeOrbitState, reducedMotion ? 0 : currentElapsed());
+    }
+
+    function currentElapsed() { return (performance.now() - animationEpoch) / 1000; }
+
+    function updateOverview(elapsed) {
+        const mobile = overviewMobileQuery.matches;
+        systems.forEach(function (state, systemIndex) {
+            let dx = 0;
+            let dy = 0;
+            if (!reducedMotion) {
+                const angle = elapsed * state.angularSpeed + state.phase;
+                dx = Math.sin(angle) * state.driftX + pointerX * (2 + systemIndex % 3);
+                dy = Math.cos(angle) * state.driftY + pointerY * (1.5 + systemIndex % 2);
+            }
+            state.button.style.transform = mobile
+                ? "translate3d(" + dx.toFixed(2) + "px," + dy.toFixed(2) + "px,0)"
+                : "translate3d(" + dx.toFixed(2) + "px," + dy.toFixed(2) + "px,0) translate(-50%,-50%)";
+            state.miniOrbits.forEach(function (orbit) {
+                setNodePosition(orbit.element, calculatePosition(orbit, reducedMotion ? 0 : elapsed));
+            });
+        });
+    }
+
+    function updateDetailOrbits(state, elapsed) {
+        if (!state) return;
+        state.orbits.forEach(function (orbit) { setNodePosition(orbit.element, calculatePosition(orbit, elapsed)); });
+    }
+
+    function updateMotion(elapsed) {
+        updateOverview(elapsed);
+        updateDetailOrbits(activeOrbitState, elapsed);
+    }
+
+    function animate(timestamp) {
+        animationFrameId = null;
+        const elapsed = (timestamp - animationEpoch) / 1000;
+        updateMotion(reducedMotion ? 0 : elapsed);
+        if (!reducedMotion) animationFrameId = requestAnimationFrame(animate);
+    }
+
+    function startMotion() {
+        if (reducedMotion) { updateMotion(0); return; }
+        if (animationFrameId === null) animationFrameId = requestAnimationFrame(animate);
+    }
+
+    function applySearch() {
+        currentQuery = search.value.trim().toLocaleLowerCase();
+        let totalMatches = 0;
+        let matchingGroups = 0;
+        groups.forEach(function (group) {
+            group.matches = group.records.filter(function (record) { return !currentQuery || (record.name || "").toLocaleLowerCase().includes(currentQuery); });
+            if (group.matches.length) matchingGroups += 1;
+            totalMatches += group.matches.length;
+            group.button.classList.toggle("has-search-match", Boolean(currentQuery && group.matches.length));
+            group.button.classList.toggle("is-search-muted", Boolean(currentQuery && !group.matches.length));
+        });
+        count.textContent = totalMatches + (totalMatches === 1 ? " alum" : " alumni") + " across " + matchingGroups + (matchingGroups === 1 ? " galaxy" : " galaxies");
+        globalEmpty.hidden = totalMatches !== 0;
+        guidance.textContent = currentQuery && totalMatches ? "Highlighted stars show matching alumni. Open a highlighted galaxy to explore." : "";
+        if (activeGroup) {
+            const localMatches = activeGroup.matches.length;
+            Array.from(starsHost.querySelectorAll(".star")).forEach(function (star) {
+                const matched = !currentQuery || star.dataset.name.toLocaleLowerCase().includes(currentQuery);
+                star.classList.toggle("is-search-match", Boolean(currentQuery && matched));
+                star.classList.toggle("is-search-muted", Boolean(currentQuery && !matched));
+            });
+            if (activeStar && currentQuery && !activeStar.dataset.name.toLocaleLowerCase().includes(currentQuery)) closePanel(false);
+            noResults.hidden = localMatches !== 0;
+            activeCount.textContent = localMatches + (localMatches === 1 ? " alum" : " alumni") + (currentQuery ? " match this search" : " in this galaxy");
+            const outsideGroup = groups.find(function (group) { return group !== activeGroup && group.matches.length; });
+            jumpButton.hidden = !currentQuery || localMatches > 0 || !outsideGroup;
+            if (outsideGroup) {
+                jumpButton.textContent = "View " + outsideGroup.name + " (" + outsideGroup.matches.length + " matching)";
+                jumpButton.onclick = function () { openGalaxy(outsideGroup,outsideGroup.button,outsideGroup.matches[0].id); };
+            }
+        }
+    }
+
+    function openGalaxy(group, trigger, focusRecordId) {
+        window.clearTimeout(transitionTimer);
+        closePanel(false);
+        activeGroup = group;
+        focusGalaxyButton = trigger;
+        groups.forEach(function (item) {
+            item.button.setAttribute("aria-pressed", item === group ? "true" : "false");
+            item.button.classList.toggle("is-active", item === group);
+        });
+        activeName.textContent = group.name;
+        activeEra.textContent = group.displayEra;
+        activeCount.textContent = group.records.length + (group.records.length === 1 ? " alum in this galaxy" : " alumni in this galaxy");
+        overview.classList.add("is-selecting");
+        detail.hidden = false;
+        detail.classList.remove("is-leaving");
+        detail.classList.add("is-arriving");
+        renderConstellation(group);
+        noResults.hidden = true;
+        jumpButton.hidden = true;
+        applySearch();
+        const searchFocusStar = focusRecordId ? Array.from(starsHost.querySelectorAll(".star")).find(function (star) { return star.dataset.id === String(focusRecordId); }) : null;
+        if (searchFocusStar) showPanel(searchFocusStar);
+        detail.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
+        if (searchFocusStar) searchFocusStar.focus({ preventScroll: true });
+        else backButton.focus({ preventScroll: true });
+        updateDetailOrbits(activeOrbitState, reducedMotion ? 0 : currentElapsed());
+        transitionTimer = window.setTimeout(function () {
+            overview.hidden = true;
+            overview.classList.remove("is-selecting");
+            detail.classList.remove("is-arriving");
+        }, reducedMotion ? 20 : 440);
+    }
+
+    function returnToOverview(restoreFocus) {
+        window.clearTimeout(transitionTimer);
+        closePanel(false);
+        activeGroup = null;
+        overview.hidden = false;
+        overview.classList.remove("is-selecting");
+        overview.classList.add("is-returning");
+        detail.classList.remove("is-arriving");
+        detail.classList.add("is-leaving");
+        groups.forEach(function (group) {
+            group.button.setAttribute("aria-pressed", "false");
+            group.button.classList.remove("is-active");
+        });
+        transitionTimer = window.setTimeout(function () {
+            detail.hidden = true;
+            detail.classList.remove("is-leaving");
+            overview.classList.remove("is-returning");
+            activeOrbitState = null;
+            resizeGeometry();
+            if (restoreFocus && focusGalaxyButton) focusGalaxyButton.focus({ preventScroll: true });
+        }, reducedMotion ? 20 : 400);
+    }
+
+    function addDetail(label, value) {
+        if (!value) return;
+        const item = createElement("p", "");
+        item.append(createElement("span", "", label), createElement("strong", "", value));
+        details.appendChild(item);
+    }
+
+    function showPanel(star) {
+        if (activeStar) {
+            activeStar.classList.remove("is-selected");
+            activeStar.setAttribute("aria-pressed", "false");
+        }
+        activeStar = star;
+        star.classList.add("is-selected");
+        star.setAttribute("aria-pressed", "true");
+        name.textContent = star.dataset.name;
+        details.replaceChildren();
+        addDetail("Generation",star.dataset.generation);
+        addDetail("Class",star.dataset.class);
+        addDetail("University",star.dataset.university);
+        addDetail("Major",star.dataset.major);
+        addDetail("Occupation",star.dataset.occupation);
+        addDetail("City",star.dataset.city);
+        bio.textContent = star.dataset.bio;
+        bio.hidden = !star.dataset.bio;
+        photoWrap.hidden = !star.dataset.photo;
+        if (star.dataset.photo) { photo.src = star.dataset.photo; photo.alt = "Profile photo of " + star.dataset.name; }
+        else { photo.removeAttribute("src"); photo.alt = ""; }
+        profileLink.href = star.dataset.profile;
+        panel.hidden = false;
+        panel.classList.remove("is-entering");
+        requestAnimationFrame(function () { panel.classList.add("is-entering"); });
+    }
+
+    function closePanel(restoreFocus) {
+        if (panel.hidden) return;
+        panel.hidden = true;
+        panel.classList.remove("is-entering");
+        if (activeStar) {
+            activeStar.classList.remove("is-selected");
+            activeStar.setAttribute("aria-pressed", "false");
+            if (restoreFocus) activeStar.focus();
+            activeStar = null;
+        }
+    }
+
+    function handleEscape() {
+        if (!panel.hidden) closePanel(true);
+        else if (!detail.hidden) returnToOverview(true);
+    }
+
+    function resizeGeometry() {
+        compactOrbit = window.matchMedia("(max-width: 900px)").matches;
+        const selectedId = activeStar && activeStar.dataset.id;
+        systems.forEach(rebuildSystemGeometry);
+        if (activeGroup && !detail.hidden) {
+            closePanel(false);
+            renderConstellation(activeGroup);
+            applySearch();
+            if (selectedId) {
+                const selected = Array.from(starsHost.querySelectorAll(".star")).find(function (star) { return star.dataset.id === selectedId; });
+                if (selected) showPanel(selected);
+            }
+        }
+        updateMotion(reducedMotion ? 0 : currentElapsed());
+    }
+
+    groups = buildGroups();
+    groups.forEach(createSystem);
+    search.addEventListener("input",applySearch);
+    let resizeTimer = null;
+    window.addEventListener("resize",function () {
+        window.clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(resizeGeometry,80);
+    },{passive:true});
+    backButton.addEventListener("click",function () { returnToOverview(true); });
+    closeButton.addEventListener("click",function () { closePanel(true); });
+    document.addEventListener("keydown",function (event) { if (event.key === "Escape") handleEscape(); });
+    if (canParallax) {
+        overview.addEventListener("pointermove",function (event) {
+            const bounds = overview.getBoundingClientRect();
+            pointerX = ((event.clientX-bounds.left)/bounds.width-.5)*2;
+            pointerY = ((event.clientY-bounds.top)/bounds.height-.5)*2;
+        },{passive:true});
+        overview.addEventListener("pointerleave",function () { pointerX=0; pointerY=0; },{passive:true});
+    }
+    updateMotion(0);
+    startMotion();
+}());</script>
+{% endblock %}

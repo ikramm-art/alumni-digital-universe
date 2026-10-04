@@ -274,7 +274,7 @@ def memories():
 
 @main_bp.route("/galaxy")
 def galaxy():
-    alumni = User.query.order_by(User.full_name).all()
+    alumni = User.query.filter_by(role="alumni").order_by(User.full_name).all()
     return render_template("galaxy.html", alumni=alumni)
 
 @main_bp.route("/timeline")
